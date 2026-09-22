@@ -1,0 +1,46 @@
+# Seguridad básica para hosting Apache
+Options -Indexes
+DirectoryIndex index.php
+
+# Bloquear el archivo de configuración (contiene contraseñas de la BD)
+<FilesMatch "^(config\.php)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Ocultar archivos ocultos (.git, .env, etc.)
+<FilesMatch "^\.">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# No mostrar errores PHP en producción (configúralo según tu hosting)
+# php_flag display_errors off
+
+# Seguridad de cabeceras
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Compresión
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript text/plain text/xml image/svg+xml
+</IfModule>
+
+# Cache de estáticos
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/svg+xml "access plus 1 month"
+</IfModule>

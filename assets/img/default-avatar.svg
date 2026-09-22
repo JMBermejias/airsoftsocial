@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#4d5a3a"/>
+      <stop offset="1" stop-color="#2e3622"/>
+    </radialGradient>
+  </defs>
+  <rect width="200" height="200" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="80" fill="#21261a"/>
+  <circle cx="100" cy="118" r="34" fill="#8b8f7d"/>
+  <path d="M100 20 C70 20 56 34 56 64 C56 72 66 76 66 68 C66 48 128 48 134 68 C134 76 144 72 144 64 C144 34 130 20 100 20 Z" fill="#8b8f7d"/>
+  <rect x="62" y="64" width="76" height="14" rx="7" fill="#4d5a3a"/>
+  <circle cx="100" cy="52" r="6" fill="#4d5a3a"/>
+  <rect x="86" y="82" width="28" height="34" rx="4" fill="#3f4a2f"/>
+  <rect x="72" y="82" width="8" height="10" rx="2" fill="#3f4a2f"/>
+  <rect x="120" y="82" width="8" height="10" rx="2" fill="#3f4a2f"/>
+  <text x="100" y="176" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="#9aa08a">AIRSOFT</text>
+</svg>

@@ -1,0 +1,105 @@
+<?php
+require_once __DIR__ . '/functions.php';
+
+if (!is_logged()) redirect('index.php');
+$me = current_user();
+$unread = unread_notifs();
+$pending = unread_requests();
+$notifs = [];
+if ($unread > 0) {
+    $s = db()->prepare('SELECT n.*, u.username actor FROM ' . t('notifications') . ' n LEFT JOIN ' . t('users') . " u ON u.id = n.actor_id WHERE n.user_id = ? ORDER BY n.created_at DESC LIMIT 15");
+    $s->execute([$me['id']]);
+    $notifs = $s->fetchAll();
+}
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>
+<link rel="stylesheet" href="assets/css/style.css?v=1">
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===================== SIDEBAR IZQUIERDO: DASHBOARD DE CONTROL ===================== -->
+  <aside class="sidebar left-sidebar">
+    <div class="brand">
+      <span class="brand-logo">🎯</span>
+      <div>
+        <h1><?= e(APP_NAME) ?></h1>
+        <small>Red social airsoft</small>
+      </div>
+    </div>
+
+    <div class="miniprofile">
+      <a href="profile.php?id=<?= (int)$me['id'] ?>">
+        <img class="avatar" src="<?= avatar_src($me['avatar']) ?>" alt="avatar">
+      </a>
+      <div class="miniprofile-meta">
+        <a class="myname" href="profile.php?id=<?= (int)$me['id'] ?>"><?= e($me['username']) ?></a>
+        <?php if (is_admin()): ?><span class="admin-badge">Administrador</span><?php endif; ?>
+      </div>
+      <a href="logout.php" class="logout" title="Cerrar sesión">✕</a>
+    </div>
+
+    <nav class="main-nav">
+      <a href="feed.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'feed.php' ? 'active' : '' ?>">
+        <span class="nav-ico">📰</span> Noticias
+      </a>
+      <a href="stories.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'stories.php' ? 'active' : '' ?>">
+        <span class="nav-ico">📖</span> Historias
+      </a>
+      <a href="friends.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'friends.php' ? 'active' : '' ?>">
+        <span class="nav-ico">🤝</span> Amigos
+        <?php if ($pending > 0): ?><span class="badge"><?= $pending ?></span><?php endif; ?>
+      </a>
+      <a href="fields.php" class="nav-item <?= strpos(basename($_SERVER['PHP_SELF']), 'field') === 0 ? 'active' : '' ?>">
+        <span class="nav-ico">🗺️</span> Campos de juego
+      </a>
+      <a href="store.php" class="nav-item <?= strpos(basename($_SERVER['PHP_SELF']), 'store') === 0 ? 'active' : '' ?>">
+        <span class="nav-ico">🛒</span> Tienda
+      </a>
+      <a href="profile_edit.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'profile_edit.php' ? 'active' : '' ?>">
+        <span class="nav-ico">⚙️</span> Mi perfil
+      </a>
+      <?php if (is_admin()): ?>
+      <a href="admin.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'admin.php' ? 'active' : '' ?>">
+        <span class="nav-ico">🛠️</span> Panel admin
+      </a>
+      <?php endif; ?>
+    </nav>
+
+    <div class="notif-box">
+      <div class="notif-head">
+        <span>🔔 Notificaciones</span>
+        <?php if ($unread > 0): ?><span class="badge"><?= $unread ?></span><?php endif; ?>
+      </div>
+      <div class="notif-list" id="notif-list">
+        <?php if ($notifs): ?>
+          <?php foreach ($notifs as $n): ?>
+            <a class="notif-item <?= !$n['is_read'] ? 'unread' : '' ?>" href="<?= e($n['link'] ?? 'feed.php') ?>">
+              <strong><?= e($n['actor'] ?? 'Social Airsoft') ?></strong>
+              <span><?= e($n['message']) ?></span>
+            </a>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <span class="empty">Sin notificaciones</span>
+        <?php endif; ?>
+      </div>
+      <button class="btn-micro" onclick="markAllRead()">Marcar todo leído</button>
+    </div>
+
+    <div class="sidebar-foot">
+      <a href="feed.php">Volver al inicio</a>
+    </div>
+  </aside>
+
+  <!-- ===================== ÁREA DE TRABAJO ===================== -->
+  <main class="content"><?php if (!empty($page_title)): ?>
+    <div class="page-head">
+      <h2><?= e($page_title) ?></h2>
+      <?php if (!empty($page_subtitle)): ?><p><?= e($page_subtitle) ?></p><?php endif; ?>
+    </div>
+  <?php endif; ?>

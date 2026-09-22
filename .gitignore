@@ -1,0 +1,20 @@
+# Credenciales reales (nunca subir a git)
+/config.php
+
+# Archivos subidos por los usuarios (se mantienen las carpetas vacías)
+uploads/avatars/*
+uploads/posts/*
+uploads/stories/*
+uploads/fields/*
+uploads/products/*
+!uploads/**/.gitkeep
+
+# Resto
+*.log
+.DS_Store
+Thumbs.db
+build/
+dist/
+*.deb
+*.apk
+*.aab
