@@ -20,6 +20,7 @@ require_once __DIR__ . '/includes/header.php';
     <input type="hidden" name="action" value="create">
     <textarea name="content" rows="3" placeholder="¿Qué está pasando?"></textarea>
     <label class="file-picker"><input type="file" name="image" accept="image/*"> 📷 Añadir imagen</label>
+    <label class="file-picker"><input type="file" name="video" accept="video/mp4,video/webm,video/quicktime"> 🎬 Añadir vídeo</label>
     <label class="check-hint">
       <input type="checkbox" name="expires_24h" value="1"> ⏳ Historia de <strong>24 horas</strong> (se borra sola). Deja la casilla sin marcar para conservarla siempre.
     </label>
@@ -33,12 +34,13 @@ require_once __DIR__ . '/includes/header.php';
   <?php endif; ?>
   <?php foreach ($stories as $s): ?>
     <article class="card story-row">
-      <button class="story-btn lg" onclick='openStory(<?= json_encode(['user' => $s['username'], 'avatar' => $s['avatar'], 'text' => $s['content'], 'image' => $s['image']], JSON_UNESCAPED_SLASHES | JSON_HEX_APOS) ?>)'>
+      <button class="story-btn lg" onclick='openStory(<?= json_encode(['user' => $s['username'], 'avatar' => $s['avatar'], 'text' => $s['content'], 'image' => $s['image'], 'video' => $s['video']], JSON_UNESCAPED_SLASHES | JSON_HEX_APOS) ?>)'>
         <span class="story-ring<?= $s['expires_at'] ? '' : ' perm' ?>"><img src="<?= avatar_src($s['avatar']) ?>" alt=""></span>
         <span class="story-name"><strong><?= e($s['username']) ?></strong><br><?= time_ago($s['created_at']) ?></span>
       </button>
       <div class="story-preview">
         <?php if ($s['image']): ?><img src="<?= e($s['image']) ?>" alt=""><?php endif; ?>
+        <?php if ($s['video']): ?><video class="story-video-thumb" src="<?= e($s['video']) ?>" muted></video><?php endif; ?>
         <?php if ($s['content']): ?><p><?= e(mb_strimwidth($s['content'], 0, 120, '…')) ?></p><?php endif; ?>
         <?php if ($s['expires_at']): ?><span class="story-badge temp" title="Se elimina sola cuando expira">⏳ Restan <?= time_till($s['expires_at']) ?></span>
         <?php else: ?><span class="story-badge perm-badge">♾️ Permanente</span><?php endif; ?>

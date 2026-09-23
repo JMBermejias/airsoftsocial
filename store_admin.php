@@ -12,6 +12,7 @@ if (isset($_GET['edit'])) {
 }
 $stmt = db()->query('SELECT * FROM ' . t('products') . ' ORDER BY sort_order ASC, id DESC');
 $products = $stmt->fetchAll();
+$payMethods = db()->query('SELECT * FROM ' . t('payment_methods') . ' ORDER BY sort_order ASC, id ASC')->fetchAll();
 
 require_once __DIR__ . '/includes/header.php';
 ?>
@@ -72,6 +73,28 @@ require_once __DIR__ . '/includes/header.php';
       </div>
     <?php endforeach; ?>
   </div>
+</div>
+
+<h3 class="section-title">💳 Formas de pago aceptadas</h3>
+<div class="card">
+  <p class="muted">Estas formas de pago se muestran en la ficha de cada producto. Marca las que aceptas, indica el dato público (URL de PayPal, teléfono de Bizum, IBAN, nota…) y el orden.</p>
+  <form method="post" action="actions/store_payment.php">
+    <?= csrf_field() ?>
+    <?php foreach ($payMethods as $m): ?>
+      <div class="pay-admin-row">
+        <label class="pay-toggle">
+          <input type="checkbox" name="enabled[]" value="<?= e($m['method_key']) ?>" <?= $m['is_enabled'] ? 'checked' : '' ?>>
+          <span class="pay-icon"><?= e($m['icon']) ?></span>
+          <strong><?= e($m['label']) ?></strong>
+        </label>
+        <input type="text" name="meta[<?= e($m['method_key']) ?>]" value="<?= e($m['meta']) ?>" placeholder="Dato público (URL / teléfono / IBAN / nota)">
+        <label class="pay-sort">Orden
+          <input type="number" name="sort[<?= e($m['method_key']) ?>]" value="<?= (int)$m['sort_order'] ?>" style="width:70px">
+        </label>
+      </div>
+    <?php endforeach; ?>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar formas de pago</button></div>
+  </form>
 </div>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

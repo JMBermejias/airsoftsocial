@@ -40,7 +40,7 @@ $stmt->execute([$me['id']]);
 $sent = $stmt->fetchAll();
 
 /* Todos los usuarios para buscar nuevos */
-$stmt = db()->query('SELECT id, username, avatar, full_name, location, experience_level FROM ' . t('users') . ' ORDER BY username LIMIT 500');
+$stmt = db()->query('SELECT id, username, avatar, full_name, location, experience_level, is_admin, created_at FROM ' . t('users') . ' ORDER BY username LIMIT 500');
 $all = array_filter($stmt->fetchAll(), fn($u) => (int)$u['id'] !== (int)$me['id']);
 
 $page_title = 'Amigos';
@@ -56,6 +56,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="card user-card">
         <img class="avatar lg" src="<?= avatar_src($u['avatar']) ?>" alt="">
         <a class="user-name" href="profile.php?id=<?= (int)$u['id'] ?>"><?= e($u['username']) ?></a>
+        <?= rank_badge($u) ?>
         <span class="muted"><?= e($u['location'] ?: 'Sin ubicación') ?></span>
         <div class="user-actions">
           <form method="post">
@@ -82,6 +83,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="card user-card">
         <img class="avatar lg" src="<?= avatar_src($u['avatar']) ?>" alt="">
         <a class="user-name" href="profile.php?id=<?= (int)$u['id'] ?>"><?= e($u['username']) ?></a>
+        <?= rank_badge($u) ?>
         <span class="muted"><?= e($u['location'] ?: '—') ?></span>
         <form method="post" onsubmit="return confirm('¿Eliminar a este amigo?')">
           <?= csrf_field() ?><input type="hidden" name="friend_action" value="remove"><input type="hidden" name="id" value="<?= (int)$u['id'] ?>">
@@ -124,6 +126,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="card user-card <?= $st; ?>" data-search="<?= e(strtolower(($u['username'] ?? '') . ' ' . ($u['full_name'] ?? '') . ' ' . ($u['location'] ?? ''))) ?>">
         <img class="avatar lg" src="<?= avatar_src($u['avatar']) ?>" alt="">
         <a class="user-name" href="profile.php?id=<?= (int)$u['id'] ?>"><?= e($u['username']) ?></a>
+        <?= rank_badge($u) ?>
         <span class="muted"><?= e($u['location'] ?: '—') ?></span>
         <?php if ($st === 'none'): ?>
           <form method="post">

@@ -35,7 +35,7 @@ if (is_admin()) {
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>
-<link rel="stylesheet" href="assets/css/style.css?v=3">
+<link rel="stylesheet" href="assets/css/style.css?v=4">
 </head>
 <body>
 <div class="layout">
@@ -56,6 +56,7 @@ if (is_admin()) {
       </a>
       <div class="miniprofile-meta">
         <a class="myname" href="profile.php?id=<?= (int)$me['id'] ?>"><?= e($me['username']) ?></a>
+        <?= rank_badge($me) ?>
         <?php if (is_admin()): ?><span class="admin-badge">Administrador</span><?php endif; ?>
       </div>
       <a href="logout.php" class="logout" title="Cerrar sesión">✕</a>
@@ -113,6 +114,7 @@ if (is_admin()) {
     </div>
 
     <div class="sidebar-foot">
+      <button class="pwa-install" onclick="pwaInstall()">⬇️ Instalar la app (icono en escritorio / móvil)</button>
       <a href="feed.php">Volver al inicio</a>
     </div>
   </aside>

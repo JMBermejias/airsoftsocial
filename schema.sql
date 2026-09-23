@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS stories (
   user_id INT UNSIGNED NOT NULL,
   content TEXT,
   image VARCHAR(255) DEFAULT NULL,
+  video VARCHAR(255) DEFAULT NULL COMMENT 'Vídeo de la historia (mp4/webm/mov)',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   expires_at DATETIME DEFAULT NULL COMMENT 'NULL = historia permanente; con fecha = historia de 24 h (se elimina sola al expirar)',
   KEY idx_user (user_id),
@@ -104,10 +105,20 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT,
   price VARCHAR(80) DEFAULT NULL,
   image VARCHAR(255) DEFAULT NULL,
-  url VARCHAR(300) DEFAULT NULL COMMENT 'Enlace a la tienda para comprar',
+  url VARCHAR(300) DEFAULT NULL COMMENT 'Enlace de afiliado para comprar (http/https obligatorio)',
   active TINYINT(1) NOT NULL DEFAULT 1,
   sort_order INT NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payment_methods (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  method_key VARCHAR(30) NOT NULL UNIQUE,
+  label VARCHAR(80) NOT NULL,
+  icon VARCHAR(8) DEFAULT NULL,
+  meta VARCHAR(255) DEFAULT NULL COMMENT 'Dato público del método (URL PayPal, teléfono Bizum, IBAN, nota)',
+  is_enabled TINYINT(1) NOT NULL DEFAULT 1,
+  sort_order INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS notifications (

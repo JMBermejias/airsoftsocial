@@ -34,20 +34,23 @@ require_once __DIR__ . '/includes/header.php';
 <div class="grid-products">
   <?php foreach ($products as $p): ?>
     <article class="card product-full">
-      <?php if ($p['image']): ?>
-        <img class="product-img big" src="<?= e($p['image']) ?>" alt="<?= e($p['name']) ?>" loading="lazy">
-      <?php else: ?>
-        <div class="product-img big placeholder"><span>🎯</span><?= e($p['name']) ?></div>
-      <?php endif; ?>
-      <div class="product-body">
-        <h3><?= e($p['name']) ?></h3>
-        <?php if ($p['description']): ?><p class="product-desc"><?= nl2br(e($p['description'])) ?></p><?php endif; ?>
-        <?php if ($p['price']): ?><span class="product-price"><?= e($p['price']) ?></span><?php endif; ?>
-        <?php if ($p['url']): ?>
-          <a class="btn btn-buy" href="<?= e($p['url']) ?>" target="_blank" rel="noopener">🛒 Comprar en la tienda</a>
+      <a href="store_product.php?id=<?= (int)$p['id'] ?>">
+        <?php if ($p['image']): ?>
+          <img class="product-img big" src="<?= e($p['image']) ?>" alt="<?= e($p['name']) ?>" loading="lazy">
         <?php else: ?>
-          <span class="btn btn-buy disabled">Consultar disponibilidad</span>
+          <div class="product-img big placeholder"><span>🎯</span><?= e($p['name']) ?></div>
         <?php endif; ?>
+      </a>
+      <div class="product-body">
+        <h3><a href="store_product.php?id=<?= (int)$p['id'] ?>"><?= e($p['name']) ?></a></h3>
+        <?php if ($p['description']): ?><p class="product-desc"><?= e(mb_strimwidth($p['description'], 0, 140, '…')) ?></p><?php endif; ?>
+        <?php if ($p['price']): ?><span class="product-price"><?= e($p['price']) ?></span><?php endif; ?>
+        <div class="product-card-actions">
+          <a class="btn btn-ghost btn-small" href="store_product.php?id=<?= (int)$p['id'] ?>">Ver ficha</a>
+          <?php if (product_buy_url($p)): ?>
+            <a class="btn btn-buy btn-small" href="<?= e(product_buy_url($p)) ?>" target="_blank" rel="noopener sponsored">🛒 Comprar</a>
+          <?php endif; ?>
+        </div>
       </div>
     </article>
   <?php endforeach; ?>

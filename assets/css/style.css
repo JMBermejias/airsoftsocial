@@ -416,3 +416,57 @@ textarea{resize:vertical}
   .composer-tools,.toolbar{flex-direction:column;align-items:stretch}
   .profile-details{grid-template-columns:1fr}
 }
+
+/* ---------- RANGOS MILITARES ---------- */
+.rank-badge{
+  display:inline-block;font-size:10px;font-weight:800;letter-spacing:.4px;
+  text-transform:uppercase;color:var(--lime);
+  background:rgba(168,198,74,.12);border:1px solid rgba(168,198,74,.35);
+  border-radius:10px;padding:1px 8px;vertical-align:middle;margin-left:6px;
+}
+.rank-badge.general{
+  color:#241a08;background:linear-gradient(180deg,#ffd166,#e8932f);
+  border-color:#ffd166;box-shadow:0 0 8px rgba(232,147,47,.5);
+}
+
+/* ---------- HISTORIA CON VÍDEO ---------- */
+.story-video{max-width:100%;max-height:52vh;border-radius:10px;border:1px solid var(--line);display:none;margin-top:10px}
+.story-video-thumb{width:96px;height:60px;object-fit:cover;border-radius:6px;background:#000}
+
+/* ---------- FICHA DE PRODUCTO / MÉTODOS DE PAGO ---------- */
+.breadcrumb{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px;margin-bottom:14px}
+.product-detail{border-color:var(--line)}
+.product-detail-grid{display:grid;grid-template-columns:minmax(220px,42%) 1fr;gap:20px}
+.product-detail-img{width:100%;border-radius:var(--radius);border:1px solid var(--line);object-fit:cover;max-height:340px}
+.product-detail-img.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:260px;color:var(--muted);font-weight:800;font-size:16px;background:linear-gradient(160deg,var(--olive),#1b1f15)}
+.product-detail-img.placeholder span{font-size:52px}
+.product-detail-info h2{margin:0 0 6px;color:#fff;font-size:22px}
+.product-detail-info .product-price{font-size:26px}
+.product-detail-desc{color:var(--text);margin:12px 0}
+.product-detail-actions{display:flex;flex-direction:column;gap:6px;margin-top:16px;align-items:flex-start}
+.btn-buy.big{font-size:16px;padding:12px 18px;width:auto}
+.store-affiliate-note{font-size:12px}
+.product-card-actions{display:flex;gap:8px}
+.product-card-actions .btn{flex:1}
+.pay-section{margin-top:22px;border-top:1px solid var(--line);padding-top:14px}
+.pay-section h3{margin:0 0 12px;font-size:15px;color:var(--lime);text-transform:uppercase;letter-spacing:.5px}
+.pay-methods{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.pay-method{display:flex;gap:10px;align-items:flex-start;background:var(--bg-soft);border:1px solid var(--line);border-radius:10px;padding:10px}
+.pay-icon{font-size:20px}
+.pay-method strong{display:block;font-size:13px;color:#fff}
+.pay-meta{font-size:12px;color:var(--muted)}
+.pay-method a{font-size:12px}
+.pay-admin-row{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--bg-soft);flex-wrap:wrap}
+.pay-admin-row input[type=text]{flex:1;min-width:200px;margin:0}
+.pay-toggle{display:flex;align-items:center;gap:8px;margin:0;min-width:230px}
+.pay-toggle input{width:auto;margin:0}
+.pay-sort{display:flex;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--muted)}
+.pay-sort input{margin:0}
+
+/* ---------- INSTALAR APP (PWA) ---------- */
+.pwa-install{display:block;width:100%;margin-bottom:10px;background:rgba(232,147,47,.16);border:1px solid var(--accent);color:#fff;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px}
+.pwa-install:hover{filter:brightness(1.15)}
+
+@media (max-width:720px){
+  .product-detail-grid{grid-template-columns:1fr}
+}

@@ -36,3 +36,23 @@ define('UPDATE_CHECK_HOURS', 6);
  * NUNCA pongas aquí el token de tu cuenta si estás en un equipo: usa uno
  * "fine-grained" con permiso solo de lectura de contenido de este repo. */
 define('GITHUB_TOKEN', '');
+
+/* ------------------------------------------------------------
+ * RANGOS MILITARES (opcional)
+ * Los usuarios suben de rango según los días desde su alta. El
+ * Administrador siempre aparece como General. Si quieres ajustar la
+ * tabla, descomenta y cambia este mapa (días de antigüedad => rango):
+ * ------------------------------------------------------------ */
+/*
+define('MILITARY_RANKS', [
+    0    => 'Soldado',
+    30   => 'Soldado de 1ª',
+    90   => 'Cabo',
+    180  => 'Sargento',
+    365  => 'Teniente',
+    730  => 'Capitán',
+    1095 => 'Comandante',
+    1460 => 'Coronel',
+    1825 => 'Teniente General',
+]);
+*/

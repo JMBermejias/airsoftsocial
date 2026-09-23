@@ -13,6 +13,10 @@ if ($action === 'save') {
     $active = isset($_POST['active']) ? 1 : 0;
     $sort = (int)($_POST['sort_order'] ?? 0);
     if ($name === '') { $_SESSION['flash'] = ['error', 'El nombre del producto es obligatorio.']; redirect('store_admin.php'); }
+    if ($url !== '' && !preg_match('#^https?://#i', $url)) {
+        $_SESSION['flash'] = ['error', 'El enlace de compra debe ser una URL válida que empiece por http:// o https:// (así nunca abrirá una página en blanco).'];
+        redirect('store_admin.php');
+    }
 
     $image = null;
     if ($id) {

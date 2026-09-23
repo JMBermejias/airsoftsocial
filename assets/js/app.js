@@ -7,13 +7,24 @@ function openStory(data){
   document.getElementById('sv-avatar').src = data.avatar || 'assets/img/default-avatar.svg';
   var txt = document.getElementById('sv-text');
   var img = document.getElementById('sv-img');
+  var vid = document.getElementById('sv-video');
   txt.textContent = data.text || '';
   if (data.image) { img.src = data.image; img.style.display = ''; }
   else { img.style.display = 'none'; }
+  if (data.video) {
+    vid.src = data.video;
+    vid.style.display = '';
+    vid.load();
+  } else {
+    vid.src = '';
+    vid.style.display = 'none';
+  }
   v.classList.remove('hidden');
 }
 function closeStory(){
   document.getElementById('story-viewer').classList.add('hidden');
+  var vid = document.getElementById('sv-video');
+  if (vid) { vid.pause(); vid.currentTime = 0; }
 }
 document.addEventListener('keydown', function(ev){
   if (ev.key === 'Escape') closeStory();
@@ -62,4 +73,22 @@ function previewAvatar(input){
   var reader = new FileReader();
   reader.onload = function(e){ img.src = e.target.result; };
   reader.readAsDataURL(input.files[0]);
+}
+
+/* ---- Instalación de la app (PWA): icono de escritorio / móvil ---- */
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredPrompt = e;
+});
+function pwaInstall(){
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(choice){
+      if (choice.outcome === 'accepted') deferredPrompt = null;
+    });
+    return;
+  }
+  /* iOS / navegadores sin prompt: mostrar cómo añadirla a mano */
+  alert('Para instalar la app: en el menú del navegador elige «Añadir a pantalla de inicio» (iOS) o «Instalar Social Airsoft» (Chrome/Edge).');
 }

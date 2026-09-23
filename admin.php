@@ -19,6 +19,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row = db()->prepare('SELECT is_admin FROM ' . t('users') . ' WHERE id = ?');
         $row->execute([$target]);
         if ($u = $row->fetch()) {
+            if ($u['is_admin']) {
+                $admins = (int)db()->query('SELECT COUNT(*) FROM ' . t('users') . ' WHERE is_admin = 1')->fetchColumn();
+                if ($admins <= 1) {
+                    $_SESSION['flash'] = ['error', 'Debe existir al menos un administrador.'];
+                    redirect('admin.php');
+                }
+            }
             db()->prepare('UPDATE ' . t('users') . ' SET is_admin = ? WHERE id = ?')->execute([$u['is_admin'] ? 0 : 1, $target]);
         }
     } elseif ($what === 'delete_user' && $target !== (int)$me['id']) {
@@ -80,7 +87,7 @@ require_once __DIR__ . '/includes/header.php';
 <h3 class="section-title">Usuarios registrados</h3>
 <div class="card">
   <table class="table">
-    <thead><tr><th>Usuario</th><th>Correo</th><th>Alta</th><th>Publicaciones</th><th>Rol</th><th>Acciones</th></tr></thead>
+    <thead><tr><th>Usuario</th><th>Correo</th><th>Antigüedad</th><th>Publicaciones</th><th>Rango / Rol</th><th>Acciones</th></tr></thead>
     <tbody>
       <?php foreach ($users as $u): ?>
         <tr>
@@ -90,10 +97,11 @@ require_once __DIR__ . '/includes/header.php';
             </a>
           </td>
           <td><?= e($u['email']) ?></td>
-          <td><?= date('d/m/y', strtotime($u['created_at'])) ?></td>
+          <td><?= date('d/m/y', strtotime($u['created_at'])) ?> (<?= days_registered($u) ?> d)</td>
           <td><?= (int)$u['posts'] ?></td>
-          <td><?= $u['is_admin'] ? '<span class="admin-badge">Admin</span>' : 'Usuario' ?></td>
+          <td><?= rank_badge($u) ?> <?= $u['is_admin'] ? '<span class="admin-badge">Admin</span>' : '' ?></td>
           <td class="row-actions">
+            <a class="btn btn-small btn-ghost" href="admin_user_edit.php?user=<?= (int)$u['id'] ?>" title="Editar">✏️</a>
             <?php if ((int)$u['id'] !== (int)$me['id']): ?>
               <form method="post"><?= csrf_field() ?><input type="hidden" name="what" value="toggle_admin"><input type="hidden" name="target" value="<?= (int)$u['id'] ?>">
                 <button class="btn btn-small btn-ghost"><?= $u['is_admin'] ? 'Quitar admin' : 'Hacer admin' ?></button></form>

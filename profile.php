@@ -45,6 +45,7 @@ require_once __DIR__ . '/includes/header.php';
   </div>
   <div class="profile-info">
     <h2><?= e($user['username']) ?>
+      <?= rank_badge($user) ?>
       <?php if ($user['is_admin']): ?><span class="admin-badge">Administrador</span><?php endif; ?>
     </h2>
     <p class="muted"><?= e($user['full_name'] ?: 'Miembro de Social Airsoft') ?> · se unió el <?= date('d/m/Y', strtotime($user['created_at'])) ?></p>
@@ -56,6 +57,7 @@ require_once __DIR__ . '/includes/header.php';
     <?php if ($user['bio']): ?><p class="bio"><?= nl2br(e($user['bio'])) ?></p><?php endif; ?>
 
     <ul class="profile-details">
+      <li>🎖️ Rango militar: <strong><?= e(military_rank($user)) ?></strong> (<?= days_registered($user) ?> días de antigüedad)</li>
       <li>📍 Ubicación: <strong><?= e($user['location'] ?: 'No indicada') ?></strong></li>
       <li>🎖️ Experiencia: <strong><?= e($user['experience_level'] ?: 'Sin especificar') ?></strong></li>
       <li>🔥 Estilo de juego: <strong><?= e($user['playing_style'] ?: 'Sin especificar') ?></strong></li>

@@ -15,7 +15,7 @@ $fids = friend_ids($me['id']);
 $fids[] = $me['id'];
 $in = implode(',', array_fill(0, count($fids), '?'));
 $params = $fids;
-$qs = 'SELECT p.*, u.username, u.avatar, u.full_name,
+$qs = 'SELECT p.*, u.username, u.avatar, u.full_name, u.created_at AS u_created_at, u.is_admin AS u_is_admin,
         (SELECT COUNT(*) FROM ' . t('post_likes') . ' l WHERE l.post_id = p.id) likes_count,
         (SELECT COUNT(*) FROM ' . t('post_likes') . ' l WHERE l.post_id = p.id AND l.user_id = ' . (int)$me['id'] . ') liked,
         (SELECT COUNT(*) FROM ' . t('post_comments') . ' c WHERE c.post_id = p.id) comments_count
@@ -34,7 +34,7 @@ $comments = [];
 if ($feed) {
     $ids = array_map(fn($p) => (int)$p['id'], $feed);
     $inC = implode(',', array_fill(0, count($ids), '?'));
-    $stmtC = db()->prepare('SELECT c.*, u.username, u.avatar FROM ' . t('post_comments') . ' c JOIN ' . t('users') . ' u ON u.id = c.user_id WHERE c.post_id IN (' . $inC . ') ORDER BY c.created_at ASC');
+    $stmtC = db()->prepare('SELECT c.*, u.username, u.avatar, u.created_at AS u_created_at, u.is_admin AS u_is_admin FROM ' . t('post_comments') . ' c JOIN ' . t('users') . ' u ON u.id = c.user_id WHERE c.post_id IN (' . $inC . ') ORDER BY c.created_at ASC');
     $stmtC->execute($ids);
     foreach ($stmtC->fetchAll() as $c) {
         $comments[$c['post_id']][] = $c;
@@ -55,7 +55,7 @@ require_once __DIR__ . '/includes/header.php';
   </button>
   <?php foreach ($stories as $s): ?>
     <?php if ((int)$s['user_id'] === (int)$me['id']) continue; ?>
-    <button class="story-btn" onclick='openStory(<?= json_encode(['user' => $s['username'], 'avatar' => $s['avatar'], 'text' => $s['content'], 'image' => $s['image']], JSON_UNESCAPED_SLASHES | JSON_HEX_APOS) ?>)'>
+    <button class="story-btn" onclick='openStory(<?= json_encode(['user' => $s['username'], 'avatar' => $s['avatar'], 'text' => $s['content'], 'image' => $s['image'], 'video' => $s['video']], JSON_UNESCAPED_SLASHES | JSON_HEX_APOS) ?>)'>
       <span class="story-ring"><img src="<?= avatar_src($s['avatar']) ?>" alt=""></span>
       <span><?= e($s['username']) ?></span>
     </button>
@@ -70,6 +70,9 @@ require_once __DIR__ . '/includes/header.php';
     <textarea name="content" rows="3" placeholder="¿Qué está pasando en el campo ahora mismo?"></textarea>
     <label class="file-picker">
       <input type="file" name="image" accept="image/*"> 📷 Añadir imagen
+    </label>
+    <label class="file-picker">
+      <input type="file" name="video" accept="video/mp4,video/webm,video/quicktime"> 🎬 Añadir vídeo
     </label>
     <label class="check-hint">
       <input type="checkbox" name="expires_24h" value="1"> ⏳ Historia de <strong>24 horas</strong> (se borra sola). Sin marcar = <strong>permanente</strong>.
@@ -124,6 +127,7 @@ require_once __DIR__ . '/includes/header.php';
         </a>
         <div class="post-meta">
           <a class="post-author" href="profile.php?id=<?= (int)$p['user_id'] ?>"><?= e($p['username']) ?></a>
+          <?= rank_badge(['is_admin' => $p['u_is_admin'], 'created_at' => $p['u_created_at']]) ?>
           <span class="post-time"><?= time_ago($p['created_at']) ?></span>
         </div>
         <?php if ((int)$p['user_id'] === (int)$me['id'] || is_admin()): ?>
@@ -187,6 +191,7 @@ require_once __DIR__ . '/includes/header.php';
               <img class="avatar sm" src="<?= avatar_src($c['avatar']) ?>" alt="">
               <div>
                 <a class="c-author" href="profile.php?id=<?= (int)$c['user_id'] ?>"><?= e($c['username']) ?></a>
+                <?= rank_badge(['is_admin' => $c['u_is_admin'], 'created_at' => $c['u_created_at']]) ?>
                 <span class="c-time"><?= time_ago($c['created_at']) ?></span>
                 <p><?= nl2br(e($c['comment'])) ?></p>
               </div>

@@ -40,13 +40,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($s->fetch()) {
                 $error = 'Ese nombre de usuario o correo ya está registrado.';
             } else {
-                $ins = db()->prepare('INSERT INTO ' . t('users') . ' (username, email, password) VALUES (?,?,?)');
-                $ins->execute([$username, $email, password_hash($pass1, PASSWORD_DEFAULT)]);
-                $uid = (int)db()->lastInsertId();
-                $fetch = db()->prepare('SELECT * FROM ' . t('users') . ' WHERE id = ?');
-                $fetch->execute([$uid]);
-                login_user($fetch->fetch());
-                redirect('feed.php');
+                $makeAdmin = !empty($_POST['make_admin']) ? 1 : 0;
+                $admins = (int)db()->query('SELECT COUNT(*) FROM ' . t('users') . ' WHERE is_admin = 1')->fetchColumn();
+                if ($makeAdmin && $admins > 0) {
+                    $error = 'Ya existe un administrador. No puedes marcarte como tal.';
+                } else {
+                    $ins = db()->prepare('INSERT INTO ' . t('users') . ' (username, email, password, is_admin) VALUES (?,?,?,?)');
+                    $ins->execute([$username, $email, password_hash($pass1, PASSWORD_DEFAULT), $makeAdmin ? 1 : 0]);
+                    $uid = (int)db()->lastInsertId();
+                    $fetch = db()->prepare('SELECT * FROM ' . t('users') . ' WHERE id = ?');
+                    $fetch->execute([$uid]);
+                    login_user($fetch->fetch());
+                    redirect('feed.php');
+                }
             }
         }
     }
@@ -67,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= e(APP_NAME) ?> · Iniciar sesión</title>
-<link rel="stylesheet" href="assets/css/style.css?v=2">
+<link rel="stylesheet" href="assets/css/style.css?v=4">
 </head>
 <body class="auth-body">
 <div class="auth-wrap">
@@ -114,10 +120,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <input type="password" name="password2" required placeholder="repite la contraseña">
         </label>
       </div>
+      <?php if (admin_count() === 0): ?>
+        <label class="check-hint">
+          <input type="checkbox" name="make_admin" value="1">
+          🎖️ <strong>Quiero ser el Administrador</strong> de la red (solo disponible para el primer usuario registrado).
+        </label>
+      <?php endif; ?>
       <button class="btn btn-primary btn-block" type="submit">Crear cuenta</button>
     </form>
   </div>
+  <button class="btn btn-ghost btn-block pwa-install" onclick="pwaInstall()" style="margin-top:12px">⬇️ Instalar Social Airsoft en el escritorio / móvil</button>
 </div>
+<script src="assets/js/app.js?v=3"></script>
 <script>
 function switchAuth(t){
   document.getElementById('form-login').classList.toggle('hidden', t!=='login');

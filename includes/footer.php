@@ -25,22 +25,24 @@ $me = current_user();
       <div class="store-list">
         <?php foreach ($store_products as $p): ?>
           <article class="product-card">
-            <?php if ($p['image']): ?>
-              <img class="product-img" src="<?= e($p['image']) ?>" alt="<?= e($p['name']) ?>" loading="lazy">
-            <?php else: ?>
-              <div class="product-img placeholder">
-                <span>🎯</span>
-                <?= e($p['name']) ?>
-              </div>
-            <?php endif; ?>
+            <a href="store_product.php?id=<?= (int)$p['id'] ?>">
+              <?php if ($p['image']): ?>
+                <img class="product-img" src="<?= e($p['image']) ?>" alt="<?= e($p['name']) ?>" loading="lazy">
+              <?php else: ?>
+                <div class="product-img placeholder">
+                  <span>🎯</span>
+                  <?= e($p['name']) ?>
+                </div>
+              <?php endif; ?>
+            </a>
             <div class="product-body">
-              <h4><?= e($p['name']) ?></h4>
+              <h4><a href="store_product.php?id=<?= (int)$p['id'] ?>"><?= e($p['name']) ?></a></h4>
               <?php if ($p['description']): ?><p class="product-desc"><?= e(mb_strimwidth($p['description'], 0, 90, '…')) ?></p><?php endif; ?>
               <?php if ($p['price']): ?><span class="product-price"><?= e($p['price']) ?></span><?php endif; ?>
-              <?php if ($p['url']): ?>
-                <a class="btn btn-buy" href="<?= e($p['url']) ?>" target="_blank" rel="noopener">Comprar</a>
+              <?php if (product_buy_url($p)): ?>
+                <a class="btn btn-buy" href="<?= e(product_buy_url($p)) ?>" target="_blank" rel="noopener sponsored">Comprar</a>
               <?php else: ?>
-                <span class="btn btn-buy disabled">Consultar</span>
+                <a class="btn btn-buy" href="store_product.php?id=<?= (int)$p['id'] ?>">Ver producto</a>
               <?php endif; ?>
             </div>
           </article>
@@ -65,11 +67,12 @@ $me = current_user();
     <div class="story-top"><img id="sv-avatar" class="avatar" src="" alt=""><span id="sv-user">…</span></div>
     <p id="sv-text" class="story-text"></p>
     <img id="sv-img" class="story-img" src="" alt="historia">
+    <video id="sv-video" class="story-video" controls playsinline preload="metadata"></video>
   </div>
   <div id="story-progress"></div>
 </div>
 
-<script src="assets/js/app.js?v=2"></script>
+<script src="assets/js/app.js?v=3"></script>
 <script>
 /* Registro del service worker (PWA instalable). Requiere HTTPS o localhost. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {

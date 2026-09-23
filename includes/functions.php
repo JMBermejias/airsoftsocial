@@ -105,6 +105,8 @@ function verify_csrf(): void {
 /* ---------- Subida de archivos ---------- */
 
 const MIME_IMG = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MIME_VIDEO = ['video/mp4', 'video/webm', 'video/quicktime'];
+const VIDEO_EXT = ['video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/quicktime' => 'mov'];
 
 function upload_file(array $file, string $folder, string $kind = 'image'): array {
     if (empty($file['name']) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -122,14 +124,17 @@ function upload_file(array $file, string $folder, string $kind = 'image'): array
 
     $ok = ($kind === 'image' && in_array($mime, MIME_IMG, true))
         || ($kind === 'pdf' && $mime === 'application/pdf')
-        || ($kind === 'any');
+        || ($kind === 'video' && in_array($mime, MIME_VIDEO, true))
+        || ($kind === 'any' && $mime !== '');
     if (!$ok) {
         return ['ok' => false, 'error' => 'Tipo de archivo no permitido.'];
     }
 
-    $ext = ($mime === 'application/pdf') ? 'pdf' : str_replace('image/', '', $mime);
+    $ext = ($mime === 'application/pdf')
+        ? 'pdf'
+        : (($kind === 'video') ? (VIDEO_EXT[$mime] ?? 'bin') : str_replace('image/', '', $mime));
     if ($ext === 'svg+xml') $ext = 'svg';
-    $name = $kind === 'image' ? bin2hex(random_bytes(8)) . '.' . $ext : bin2hex(random_bytes(8)) . '.pdf';
+    $name = bin2hex(random_bytes(8)) . '.' . $ext;
 
     $base = dirname(__DIR__) . '/uploads/' . $folder;
     if (!is_dir($base)) mkdir($base, 0775, true);
@@ -183,6 +188,71 @@ function unread_requests(): int {
     );
     $stmt->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
     return (int)$stmt->fetch()['c'];
+}
+
+/* ---------- Rangos militares por antigüedad ----------
+ * Los usuarios suben de rango según los días desde su alta.
+ * El administrador siempre es General (el de mayor grado).
+ * Definición configurable con la constante MILITARY_RANKS (días => rango).
+ */
+function military_rank(array $user): string {
+    if ((int)($user['is_admin'] ?? 0) === 1) return 'General';
+    $ladder = [
+        0    => 'Soldado',
+        30   => 'Soldado de 1ª',
+        90   => 'Cabo',
+        180  => 'Sargento',
+        365  => 'Teniente',
+        730  => 'Capitán',
+        1095 => 'Comandante',
+        1460 => 'Coronel',
+        1825 => 'Teniente General',
+    ];
+    if (defined('MILITARY_RANKS') && is_array(MILITARY_RANKS)) {
+        $ladder = MILITARY_RANKS;
+        ksort($ladder);
+    }
+    $days = (int)floor((time() - strtotime($user['created_at'] ?? 'now')) / 86400);
+    if ($days < 0) $days = 0;
+    $rank = 'Soldado';
+    foreach ($ladder as $d => $r) {
+        if ($days >= (int)$d) $rank = (string)$r;
+    }
+    return $rank;
+}
+
+function rank_badge(array $user): string {
+    $rank = military_rank($user);
+    $is_admin = (int)($user['is_admin'] ?? 0) === 1;
+    $class = $is_admin ? 'rank-badge general' : 'rank-badge';
+    return '<span class="' . $class . '" title="Rango según antigüedad">' . e($rank) . '</span>';
+}
+
+function days_registered(array $user): int {
+    return (int)floor((time() - strtotime($user['created_at'] ?? 'now')) / 86400);
+}
+
+function admin_count(): int {
+    static $n = null;
+    if ($n === null) {
+        $n = (int)db()->query('SELECT COUNT(*) FROM ' . t('users') . ' WHERE is_admin = 1')->fetchColumn();
+    }
+    return $n;
+}
+
+/* ---------- Tienda (afiliación) ---------- */
+
+/* Métodos de pago activos configurados por el administrador. */
+function store_payment_methods(): array {
+    $stmt = db()->query('SELECT * FROM ' . t('payment_methods') . ' WHERE is_enabled = 1 ORDER BY sort_order ASC, id ASC');
+    return $stmt->fetchAll();
+}
+
+/* URL de compra válida del producto (solo http/https). */
+function product_buy_url(array $p): ?string {
+    $u = trim((string)($p['url'] ?? ''));
+    if ($u === '' || !preg_match('#^https?://#i', $u)) return null;
+    return $u;
 }
 
 /* ---------- Amistades ---------- */
@@ -423,7 +493,29 @@ function update_notify_admins(): void {
 /* Migraciones de esquema compartidas por install.php y el auto-actualizador.
  * Se ejecutan siempre: deben ser idempotentes. */
 function run_migrations(PDO $pdo): void {
+    /* Historias: columna para vídeo (granulada como idempotente). */
     try {
-        $pdo->exec('ALTER TABLE stories MODIFY expires_at DATETIME DEFAULT NULL COMMENT "NULL = permanente; con fecha = expira"');
-    } catch (PDOException $e) { /* tabla nueva o ya migrada */ }
+        $pdo->exec('ALTER TABLE ' . t('stories') . ' ADD COLUMN video VARCHAR(255) DEFAULT NULL AFTER image');
+    } catch (PDOException $e) { /* ya añadida */ }
+
+    /* Métodos de pago de la tienda (afiliación). */
+    $pdo->exec('CREATE TABLE IF NOT EXISTS ' . t('payment_methods') . ' (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        method_key VARCHAR(30) NOT NULL UNIQUE,
+        label VARCHAR(80) NOT NULL,
+        icon VARCHAR(8) DEFAULT NULL,
+        meta VARCHAR(255) DEFAULT NULL COMMENT "Dato público del método (URL PayPal, teléfono Bizum, IBAN, nota)",
+        is_enabled TINYINT(1) NOT NULL DEFAULT 1,
+        sort_order INT NOT NULL DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
+    $seed = [
+        ['paypal', 'PayPal', '🅿️', 'https://paypal.me/tu_usuario', 1, 1],
+        ['bizum', 'Bizum', '📱', '600 000 000', 1, 2],
+        ['card', 'Tarjeta de crédito / débito', '💳', 'Visa · Mastercard', 1, 3],
+        ['bank', 'Transferencia bancaria', '🏦', 'ES00 0000 0000 0000 0000 0000', 1, 4],
+        ['cash', 'Efectivo / recogida en campo', '💵', 'Abona en la entrega', 1, 5],
+    ];
+    $ins = $pdo->prepare('INSERT IGNORE INTO ' . t('payment_methods') . ' (method_key, label, icon, meta, is_enabled, sort_order) VALUES (?,?,?,?,?,?)');
+    foreach ($seed as $s) $ins->execute($s);
 }
