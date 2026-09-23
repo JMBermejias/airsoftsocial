@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4c5b41"/>
+      <stop offset="1" stop-color="#1f2518"/>
+    </linearGradient>
+    <linearGradient id="hex" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#333c26"/>
+      <stop offset="1" stop-color="#283020"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo redondeado -->
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect x="18" y="18" width="476" height="476" rx="100" fill="none" stroke="#e9e2bc" stroke-opacity="0.16" stroke-width="4"/>
+
+  <!-- Parche hexagonal -->
+  <polygon points="256,106 386,181 386,331 256,406 126,331 126,181" fill="url(#hex)" stroke="#b8ae82" stroke-width="10" stroke-linejoin="round"/>
+  <polygon points="256,122 374,190 374,322 256,390 138,322 138,190" fill="none" stroke="#7e7a5c" stroke-opacity="0.5" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- Balines en vuelo (motivo airsoft) -->
+  <line x1="132" y1="108" x2="150" y2="140" stroke="#e9e2bc" stroke-opacity="0.45" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="150" cy="146" r="13" fill="#d9cf9c"/>
+  <line x1="158" y1="86" x2="172" y2="106" stroke="#e9e2bc" stroke-opacity="0.45" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="175" cy="112" r="9" fill="#d9cf9c"/>
+
+  <!-- Mira táctico: anillos -->
+  <circle cx="256" cy="230" r="88" fill="none" stroke="#e9e2bc" stroke-width="9"/>
+  <circle cx="256" cy="230" r="44" fill="none" stroke="#e9e2bc" stroke-width="5"/>
+  <!-- cruces 45º -->
+  <line x1="339" y1="147" x2="352" y2="160" stroke="#e9e2bc" stroke-opacity="0.85" stroke-width="6" stroke-linecap="round"/>
+  <line x1="173" y1="147" x2="160" y2="160" stroke="#e9e2bc" stroke-opacity="0.85" stroke-width="6" stroke-linecap="round"/>
+  <line x1="339" y1="313" x2="352" y2="300" stroke="#e9e2bc" stroke-opacity="0.85" stroke-width="6" stroke-linecap="round"/>
+  <line x1="173" y1="313" x2="160" y2="300" stroke="#e9e2bc" stroke-opacity="0.85" stroke-width="6" stroke-linecap="round"/>
+  <!-- retícula -->
+  <line x1="190" y1="230" x2="322" y2="230" stroke="#e9e2bc" stroke-width="7" stroke-linecap="round"/>
+  <line x1="256" y1="164" x2="256" y2="296" stroke="#e9e2bc" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="256" cy="230" r="26" fill="none" stroke="#e9e2bc" stroke-opacity="0.6" stroke-width="3"/>
+  <circle cx="256" cy="230" r="17" fill="#f2ecce"/>
+
+  <!-- Estrella inferior -->
+  <path fill="#e9e2bc" d="M256,366 L261.29,380.72 L276.92,381.20 L264.56,390.78 L268.93,405.80 L256,397 L243.07,405.80 L247.44,390.78 L235.08,381.20 L250.71,380.72 Z"/>
+</svg>
