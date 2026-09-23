@@ -18,6 +18,7 @@ Red social para la comunidad de **airsoft** pensada para alojarse en cualquier *
 | **Campos de juego** | Cualquier usuario puede **dar de alta un campo**: ubicación, tipo de juego, capacidad, precio, contacto, descripción y **requisitos de juego**. Los campos nuevos quedan **pendientes de aprobación** del administrador. |
 | **Perfil completo** | Editar todos los datos (nombre, biografía, ubicación, experiencia, estilo, arma), **imagen de avatar** y contraseña. |
 | **Subida de archivos** | Imágenes (JPG/PNG/GIF/WEBP) y **PDF** en publicaciones, avatares y campos. Validación de tipo MIME real. **Sin tope fijo de tamaño** en la app: los archivos se aceptan hasta el límite que permita tu hosting (`upload_max_filesize` / `post_max_size`). |
+| **Actualización automática** | Cada 6 h la app comprueba si hay una **release más reciente** en GitHub y te **avisa** (campanilla 🔔, menú y banner). Con el botón **«Actualizar ahora»** se descarga e instala sola: `config.php`, `uploads/` y `.htaccess` quedan intactos junto con tus datos. |
 | **Panel de administración** | Aprobar campos, gestionar productos, subir/bajar de rol a usuarios y eliminar usuarios. |
 
 ---
@@ -64,6 +65,23 @@ install.php    → instalador guiado (¡borrar después!)
    ```
 
 ---
+
+## ⬆️ Actualización automática
+
+Social Airsoft se mantiene al día sin tocar nada:
+
+1. Cada **6 horas** (cuando entra un administrador) consulta GitHub (`GITHUB_REPO`, por defecto las releases oficiales de este repo).
+2. Si hay una versión nueva, te llega un **aviso** en la campanilla, un distintivo en el menú **⬆️ Actualizar app** y un banner con el botón **Ver y actualizar**.
+3. Desde **`updates.php`** ves la versión instalada, la última disponible, los cambios y pulsas **«Actualizar ahora»** (con tu confirmación).
+4. La app se descarga sola desde GitHub y aplica la actualización **preservando `config.php`, `uploads/` y tus datos**. Las migraciones de base de datos se aplican solas y los navegadores recargan sin caché antigua.
+
+Opciones de configuración (en `config.php`):
+
+```php
+define('GITHUB_REPO', 'JMBermejias/socialairsoft'); // repo de las actualizaciones
+define('UPDATE_CHECK_HOURS', 6);                    // cada cuántas horas comprobar
+define('GITHUB_TOKEN', '');                         // opcional: evita límites de la API
+```
 
 ## 📱 App instalable (PWA) — escritorio y móvil
 
