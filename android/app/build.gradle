@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application'
+}
+
+def appUrlEnv = System.getenv('WEB_APP_URL')
+def appUrl = (appUrlEnv == null || appUrlEnv.trim().isEmpty() || appUrlEnv == 'null')
+        ? 'https://socialairsoft.app' : appUrlEnv.trim()
+def vc = project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : 1
+def vn = project.hasProperty('versionName') ? project.property('versionName') : '1.0.0'
+
+// Firmado: si el entorno entrega un keystore (workflow de CI) se usa el de
+// release; si no, se cae al de debug para que el build nunca falle.
+def keystoreFile = System.getenv('KEYSTORE_FILE')
+def hasKeystore = keystoreFile && !keystoreFile.isEmpty()
+
+android {
+    namespace 'com.socialairsoft.app'
+    compileSdk 34
+    buildToolsVersion '34.0.0'
+
+    defaultConfig {
+        applicationId 'com.socialairsoft.app'
+        minSdk 21
+        targetSdk 34
+        versionCode vc
+        versionName vn
+        buildConfigField 'String', 'APP_URL', "\"$appUrl\""
+    }
+
+    signingConfigs {
+        if (hasKeystore) {
+            release {
+                storeFile file(keystoreFile)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig hasKeystore ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+}

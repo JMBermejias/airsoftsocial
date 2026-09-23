@@ -1,0 +1,15 @@
+Package: socialairsoft
+Version: 1.0.0
+Architecture: all
+Maintainer: JMBermejias <JMBermejias@users.noreply.github.com>
+Section: web
+Priority: optional
+Depends: apache2 | nginx, php (>= 7.4), php-mysql, php-mbstring, mariadb-server | mysql-server
+Homepage: https://github.com/JMBermejias/socialairsoft
+Description: Red social para la comunidad de airsoft
+ Red social tematica de airsoft construida en PHP y MySQL:
+ muro de noticias con imagenes y PDF, historias de 24h visibles solo
+ para amigos, campos de juego con aprobacion del administrador, tienda
+ online siempre visible y panel de administracion.
+ El paquete instala la aplicacion en /var/www/socialairsoft y deja
+ lista su instalacion web.

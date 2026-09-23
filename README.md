@@ -93,16 +93,13 @@ Cada vez que crees una nueva versión (ver `release.sh`) se generan automáticam
 
 ## ⚠️ Para desarrollo en local
 
-```bash
-# Opción fácil (sin dependencias): usar el binario de PHP de tu sistema
-curl -sSf https://getcomposer.org/installer | php
+Solo necesitas PHP y MySQL/MariaDB corriendo, y un `config.php` apuntando a ellos:
 
-# En este repo también hay un entorno de pruebas montado con Homebrew:
-#   ~/brew/opt/php/sbin/php-fpm, ~/brew/bin/mariadbd
-# Prueba rápida:
-~/brew/bin/php -S localhost:8080   # (con MariaDB corriendo y config.php apuntando a localhost)
+```bash
+# Ejecución rápida del servidor de desarrollo
+php -S localhost:8080   # con MariaDB/MySQL activo y config.php configurado
 ```
 
-Ver `docs/` para más detalles.
+Después: `npm` no; **no hay dependencias que instalar** (PHP + MySQL únicamente). Las pruebas integrales del proyecto viven en `/tmp/opencode/integration_test.php`.
 
 Hecho para la comunidad airsoft. 🎯
