@@ -219,6 +219,13 @@ textarea{resize:vertical}
 .story-preview p{margin:0}
 .stories-grid{display:grid;gap:12px}
 .story-btn.own{border:1px dashed var(--line);border-radius:12px;padding:8px 14px;color:var(--muted)}
+.story-ring.perm{border:2px solid var(--accent)}
+.story-badge{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.story-badge.temp{background:rgba(255,193,7,.15);color:#ffc107}
+.story-badge.perm-badge{background:rgba(63,161,110,.15);color:#6fd39d}
+.check-hint{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin:2px 0 2px;padding:6px 0;cursor:pointer}
+.check-hint input{width:auto;margin:0}
+.check-hint strong{color:var(--text)}
 
 /* ---------- VISOR DE HISTORIAS ---------- */
 .story-viewer{

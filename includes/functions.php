@@ -112,11 +112,10 @@ function upload_file(array $file, string $folder, string $kind = 'image'): array
     }
     $err = $file['error'];
     if ($err !== UPLOAD_ERR_OK) {
+        if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) {
+            return ['ok' => false, 'error' => 'El archivo supera el límite que permite tu servidor (upload_max_filesize / post_max_size).'];
+        }
         return ['ok' => false, 'error' => 'Error al subir el archivo (código ' . $err . ').'];
-    }
-    $size = $file['size'];
-    if ($size > 10 * 1024 * 1024) {
-        return ['ok' => false, 'error' => 'El archivo supera los 10 MB.'];
     }
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $file['tmp_name']);
@@ -150,6 +149,14 @@ function time_ago(string $datetime): string {
     if ($diff < 86400) return floor($diff / 3600) . ' h';
     if ($diff < 86400 * 7) return floor($diff / 86400) . ' d';
     return date('d/m/Y', strtotime($datetime));
+}
+
+function time_till(string $datetime): string {
+    $diff = strtotime($datetime) - time();
+    if ($diff < 60) return 'menos de 1 min';
+    if ($diff < 3600) return floor($diff / 60) . ' min';
+    if ($diff < 86400) return floor($diff / 3600) . ' h ' . floor(($diff % 3600) / 60) . ' min';
+    return floor($diff / 86400) . ' d';
 }
 
 function avatar_src(?string $avatar): string {
@@ -226,6 +233,24 @@ function reject_friend_request(int $me, int $from): void {
 function remove_friendship(int $me, int $other): void {
     $stmt = db()->prepare('DELETE FROM ' . t('friendships') . ' WHERE ((user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?))');
     $stmt->execute([$me, $other, $other, $me]);
+}
+
+/* ---------- Historias ----------
+ * Las historias son PERMANENTES por defecto (expires_at NULL).
+ * Solo se eliminan solas cuando el usuario las crea como "historia de 24 h"
+ * y esas 24 horas han pasado. Propias y de amigos, visibles solo para amigos.
+ */
+function visible_stories(int $me): array {
+    $ids = friend_ids($me);
+    $ids[] = $me;
+    $in = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = db()->prepare(
+        'SELECT s.*, u.username, u.avatar FROM ' . t('stories') . ' s JOIN ' . t('users') . ' u ON u.id = s.user_id
+         WHERE (s.expires_at IS NULL OR s.expires_at > NOW()) AND s.user_id IN (' . $in . ')
+         ORDER BY (s.expires_at IS NULL) DESC, s.created_at DESC LIMIT 50'
+    );
+    $stmt->execute($ids);
+    return $stmt->fetchAll();
 }
 
 /* ---------- Etiquetas (tags) ---------- */

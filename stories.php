@@ -5,14 +5,8 @@ require_login();
 $me = current_user();
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 
-/* Historias vistas: propias + de amigos (solo amigos) */
-$fids = friend_ids($me['id']);
-$fids[] = $me['id'];
-$in = implode(',', array_fill(0, count($fids), '?'));
-$qs = 'SELECT s.*, u.username, u.avatar FROM ' . t('stories') . ' s JOIN ' . t('users') . ' u ON u.id = s.user_id WHERE s.expires_at > NOW() AND s.user_id IN (' . $in . ') ORDER BY s.created_at DESC';
-$stories = db()->prepare($qs);
-$stories->execute($fids);
-$stories = $stories->fetchAll();
+/* Historias visibles: propias + de amigos. Permanentes y de 24 h no expiradas. */
+$stories = visible_stories($me['id']);
 
 require_once __DIR__ . '/includes/header.php';
 ?>
@@ -20,29 +14,34 @@ require_once __DIR__ . '/includes/header.php';
 
 <section class="card" style="max-width:640px">
   <h3>Crea una historia</h3>
-  <p class="muted">Las historias duran 24 h y solo las ven tus <strong>amigos añadidos</strong>.</p>
+  <p class="muted">Las historias son <strong>permanentes</strong> y solo las ven tus <strong>amigos añadidos</strong>. Marca la casilla «24 h» si quieres que desaparezca automáticamente al pasar un día.</p>
   <form action="actions/story.php" method="post" enctype="multipart/form-data">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="create">
     <textarea name="content" rows="3" placeholder="¿Qué está pasando?"></textarea>
     <label class="file-picker"><input type="file" name="image" accept="image/*"> 📷 Añadir imagen</label>
+    <label class="check-hint">
+      <input type="checkbox" name="expires_24h" value="1"> ⏳ Historia de <strong>24 horas</strong> (se borra sola). Deja la casilla sin marcar para conservarla siempre.
+    </label>
     <div class="form-actions"><button class="btn btn-primary" type="submit">Publicar historia</button></div>
   </form>
 </section>
 
 <section class="stories-grid">
   <?php if (!$stories): ?>
-    <div class="card empty">No hay historias activas. Tus historias y las de tus amigos aparecerán aquí.</div>
+    <div class="card empty">No hay historias. Tus historias permanentes y las de tus amigos (y las de 24 h activas) aparecerán aquí.</div>
   <?php endif; ?>
   <?php foreach ($stories as $s): ?>
     <article class="card story-row">
       <button class="story-btn lg" onclick='openStory(<?= json_encode(['user' => $s['username'], 'avatar' => $s['avatar'], 'text' => $s['content'], 'image' => $s['image']], JSON_UNESCAPED_SLASHES | JSON_HEX_APOS) ?>)'>
-        <span class="story-ring"><img src="<?= avatar_src($s['avatar']) ?>" alt=""></span>
+        <span class="story-ring<?= $s['expires_at'] ? '' : ' perm' ?>"><img src="<?= avatar_src($s['avatar']) ?>" alt=""></span>
         <span class="story-name"><strong><?= e($s['username']) ?></strong><br><?= time_ago($s['created_at']) ?></span>
       </button>
       <div class="story-preview">
         <?php if ($s['image']): ?><img src="<?= e($s['image']) ?>" alt=""><?php endif; ?>
         <?php if ($s['content']): ?><p><?= e(mb_strimwidth($s['content'], 0, 120, '…')) ?></p><?php endif; ?>
+        <?php if ($s['expires_at']): ?><span class="story-badge temp" title="Se elimina sola cuando expira">⏳ Restan <?= time_till($s['expires_at']) ?></span>
+        <?php else: ?><span class="story-badge perm-badge">♾️ Permanente</span><?php endif; ?>
       </div>
       <?php if ((int)$s['user_id'] === (int)$me['id']): ?>
         <form action="actions/story.php" method="post" onsubmit="return confirm('¿Eliminar esta historia?')">

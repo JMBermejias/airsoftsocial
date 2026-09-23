@@ -14,10 +14,10 @@ Red social para la comunidad de **airsoft** pensada para alojarse en cualquier *
 | **Tienda online (panel derecho, siempre visible)** | El sidebar derecho muestra tus productos (imagen, precio, botón de compra con enlace). Solo el administrador la gestiona. |
 | **Noticias generales** | Si el **administrador** publica con la casilla **⭐ Noticia general**, la publicación llega a **todos los usuarios** de la red, no solo a amigos. El resto de publicaciones solo las ven el autor y sus amigos. |
 | **Amigos** | Enviar/aceptar solicitudes, ver solicitudes pendientes, buscar y eliminar amigos. Las noticias de amigos se muestran en el muro. |
-| **Historias** | Historias de **24 horas** con texto y/o imagen. **Solo las ven los amigos añadidos** (aparecen en la barra superior del muro y en la página de historias). |
+| **Historias** | Historias **permanentes** por defecto (no se pierden). Si marcas la casilla «⏳ 24 horas» se borran solas al expirar. Con texto y/o imagen, **solo las ven los amigos añadidos** (barra superior del muro y página de historias). |
 | **Campos de juego** | Cualquier usuario puede **dar de alta un campo**: ubicación, tipo de juego, capacidad, precio, contacto, descripción y **requisitos de juego**. Los campos nuevos quedan **pendientes de aprobación** del administrador. |
 | **Perfil completo** | Editar todos los datos (nombre, biografía, ubicación, experiencia, estilo, arma), **imagen de avatar** y contraseña. |
-| **Subida de archivos** | Imágenes (JPG/PNG/GIF/WEBP) y **PDF** en publicaciones, avatares y campos. Validación de tipo y tamaño (máx. 10 MB). |
+| **Subida de archivos** | Imágenes (JPG/PNG/GIF/WEBP) y **PDF** en publicaciones, avatares y campos. Validación de tipo MIME real. **Sin tope fijo de tamaño** en la app: los archivos se aceptan hasta el límite que permita tu hosting (`upload_max_filesize` / `post_max_size`). |
 | **Panel de administración** | Aprobar campos, gestionar productos, subir/bajar de rol a usuarios y eliminar usuarios. |
 
 ---
@@ -62,6 +62,18 @@ install.php    → instalador guiado (¡borrar después!)
    ```sql
    UPDATE users SET is_admin = 1 WHERE username = 'TUNOMBRE';
    ```
+
+---
+
+## 📱 App instalable (PWA) — escritorio y móvil
+
+La web es una **Progressive Web App**: se instala **como una aplicación con su icono**, sin pasar por tiendas, y abre a pantalla completa.
+
+- **Escritorio (Chrome/Edge):** el icono de instalación aparece en la barra de direcciones.
+- **Móvil:** Chrome/Android → icono de menú → *Añadir a pantalla de inicio* / *Instalar app*; iPhone → Compartir → *Añadir a pantalla de inicio*.
+- **Requisito:** acceso por **HTTPS** (tu hosting ya debe tenerlo si usas tu dominio).
+- La instalación carga solo los estáticos desde caché y usa *network-first* para las páginas (nada de contenido obsoleto entre usuarios).
+- También hay **`.apk` / `.aab`** (aplicación Android con WebView) en las releases, que abren directamente la web con su icono.
 
 ---
 

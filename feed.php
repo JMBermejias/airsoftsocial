@@ -7,20 +7,11 @@ $me = current_user();
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
 
-/* --- Historias activas (propias + de amigos) --- */
-$myFriends = friend_ids($me['id']);
-$stories = [];
-{
-    $p = array_merge([$me['id']], $myFriends);
-    $in = implode(',', array_fill(0, count($p), '?'));
-    $qs = 'SELECT s.id, s.user_id, s.content, s.image, s.created_at, u.username, u.avatar FROM ' . t('stories') . ' s JOIN ' . t('users') . ' u ON u.id = s.user_id WHERE s.expires_at > NOW() AND s.user_id IN (' . $in . ') ORDER BY s.created_at DESC LIMIT 20';
-    $stmt = db()->prepare($qs);
-    $stmt->execute($p);
-    $stories = $stmt->fetchAll();
-}
+/* --- Historias visibles (propias + de amigos): permanentes y de 24 h no expiradas --- */
+$stories = visible_stories($me['id']);
 
 /* --- Muro (feed) --- */
-$fids = $myFriends;
+$fids = friend_ids($me['id']);
 $fids[] = $me['id'];
 $in = implode(',', array_fill(0, count($fids), '?'));
 $params = $fids;
@@ -79,6 +70,9 @@ require_once __DIR__ . '/includes/header.php';
     <textarea name="content" rows="3" placeholder="¿Qué está pasando en el campo ahora mismo?"></textarea>
     <label class="file-picker">
       <input type="file" name="image" accept="image/*"> 📷 Añadir imagen
+    </label>
+    <label class="check-hint">
+      <input type="checkbox" name="expires_24h" value="1"> ⏳ Historia de <strong>24 horas</strong> (se borra sola). Sin marcar = <strong>permanente</strong>.
     </label>
     <div class="form-actions">
       <button type="button" class="btn btn-ghost" onclick="document.getElementById('story-create').classList.add('hidden')">Cancelar</button>

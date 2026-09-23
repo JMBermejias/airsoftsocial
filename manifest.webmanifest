@@ -1,0 +1,27 @@
+{
+  "name": "Social Airsoft",
+  "short_name": "Social Airsoft",
+  "description": "Red social para la comunidad de airsoft: noticias, historias permanentes, amigos, campos de juego y tienda online.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f6f2",
+  "theme_color": "#3a4b3b",
+  "categories": ["social", "social_networking", "sports"],
+  "icons": [
+    {
+      "src": "assets/img/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/img/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

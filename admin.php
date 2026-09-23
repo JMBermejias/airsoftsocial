@@ -45,7 +45,7 @@ $stats = [
     'campos aprobados' => (int)db()->query('SELECT COUNT(*) c FROM ' . t('game_fields') . ' WHERE is_approved = 1')->fetch()['c'],
     'campos pendientes' => count($pending_fields),
     'publicaciones' => (int)db()->query('SELECT COUNT(*) c FROM ' . t('posts'))->fetch()['c'],
-    'historias activas' => (int)db()->query('SELECT COUNT(*) c FROM ' . t('stories') . ' WHERE expires_at > NOW()')->fetch()['c'],
+    'historias activas' => (int)db()->query('SELECT COUNT(*) c FROM ' . t('stories') . ' WHERE (expires_at IS NULL OR expires_at > NOW())')->fetch()['c'],
 ];
 
 require_once __DIR__ . '/includes/header.php';

@@ -20,9 +20,11 @@ if ($action === 'create') {
         $_SESSION['flash'] = ['error', 'Escribe algo o sube una imagen.'];
         redirect('stories.php');
     }
-    $stmt = db()->prepare('INSERT INTO ' . t('stories') . ' (user_id, content, image, expires_at) VALUES (?,?,?,DATE_ADD(NOW(), INTERVAL 24 HOUR))');
+    /* Por defecto la historia es PERMANENTE; solo expira si se marca "24 h" */
+    $expires = !empty($_POST['expires_24h']) ? 'DATE_ADD(NOW(), INTERVAL 24 HOUR)' : 'NULL';
+    $stmt = db()->prepare('INSERT INTO ' . t('stories') . ' (user_id, content, image, expires_at) VALUES (?,?,?,' . $expires . ')');
     $stmt->execute([$me['id'], $content, $image]);
-    $_SESSION['flash'] = ['ok', 'Historia publicada (durará 24 horas).'];
+    $_SESSION['flash'] = ['ok', !empty($_POST['expires_24h']) ? 'Historia publicada (durará 24 horas).' : 'Historia publicada (permanente).'];
     redirect('feed.php');
 }
 

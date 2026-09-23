@@ -74,8 +74,9 @@ CREATE TABLE IF NOT EXISTS stories (
   content TEXT,
   image VARCHAR(255) DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  expires_at DATETIME NOT NULL,
+  expires_at DATETIME DEFAULT NULL COMMENT 'NULL = historia permanente; con fecha = historia de 24 h (se elimina sola al expirar)',
   KEY idx_user (user_id),
+  KEY idx_story_expiry (expires_at),
   CONSTRAINT fk_story_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
