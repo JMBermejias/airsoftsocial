@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
   <button class="btn btn-ghost btn-block pwa-install" onclick="pwaInstall()" style="margin-top:12px">⬇️ Instalar Social Airsoft en el escritorio / móvil</button>
 </div>
-<script src="assets/js/app.js?v=3"></script>
+<script src="assets/js/app.js?v=4"></script>
 <script>
 function switchAuth(t){
   document.getElementById('form-login').classList.toggle('hidden', t!=='login');
