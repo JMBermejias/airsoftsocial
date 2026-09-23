@@ -64,27 +64,54 @@ if ($dl === false || @filesize($tgz) > 200 * 1048576) {
 /* 2) Extraer */
 $extract = $work . '/extract';
 @mkdir($extract, 0775, true);
+$rremove = function (string $p) use (&$rremove): void {
+    if (is_dir($p)) {
+        foreach ((array)@scandir($p) as $it) {
+            if ($it === '.' || $it === '..') continue;
+            $rremove($p . '/' . $it);
+        }
+        @rmdir($p);
+    } else {
+        @unlink($p);
+    }
+};
+foreach ((array)@scandir($extract) as $old) {
+    if ($old === '.' || $old === '..') continue;
+    $rremove($extract . '/' . $old);
+}
 try {
     $phar = new PharData($tgz);
     $phar->extractTo($extract, null, true);
 } catch (Throwable $e) {
     $fail('No se pudo extraer el paquete: ' . $e->getMessage());
 }
-$pkg = $extract . '/socialairsoft-' . $target;
-if (!is_dir($pkg) || !is_file($pkg . '/index.php')) {
+
+/* 3) Detectar el directorio raíz del paquete (GitHub lo nombra
+ *    socialairsoft-{tag} sin la v inicial). No se asume el nombre exacto. */
+$pkg = null;
+foreach ((array)@scandir($extract) as $it) {
+    if ($it === '.' || $it === '..') continue;
+    $cand = $extract . '/' . $it;
+    if (is_dir($cand) && is_file($cand . '/index.php') && is_file($cand . '/includes/functions.php')) {
+        $pkg = $cand;
+        break;
+    }
+}
+if (!$pkg) {
     $fail('El paquete descargado no tiene el formato esperado.');
 }
 
-/* 3) Copiar el paquete encima de la instalación actual.
+/* 4) Copiar el paquete encima de la instalación actual.
  *    - El paquete NUNCA contiene config.php (está en .gitignore) ni uploads/.
- *    - Por doble seguridad, se omiten config.php, uploads/ y cualquier dotfile
- *      al copiar, para que el archivo local de credenciales y las subidas
- *      de usuarios queden intactas ocurra lo que ocurra. */
+ *    - Se omiten config.php, uploads/ y cualquier dotfile salvo .htaccess
+ *      (protección Apache y MIME de la PWA), para que las credenciales
+ *      locales, .env o similares y las subidas queden intactas. */
 $root = dirname(__DIR__);
 $omit = ['config.php', 'uploads', '.git'];
 $copyTree = function (string $src, string $dst) use ($omit, &$copyTree): void {
     foreach ((array)@scandir($src) as $it) {
-        if ($it === '.' || $it === '..' || in_array($it, $omit, true) || $it[0] === '.') continue;
+        if ($it === '.' || $it === '..' || in_array($it, $omit, true)) continue;
+        if ($it[0] === '.' && $it !== '.htaccess') continue;
         $s = $src . '/' . $it;
         $d = $dst . '/' . $it;
         if (is_dir($s)) {
@@ -97,7 +124,7 @@ $copyTree = function (string $src, string $dst) use ($omit, &$copyTree): void {
 };
 $copyTree($pkg, $root);
 
-/* 4) Forzar que los clientes (PWA) recarguen los estáticos sin caché vieja */
+/* 5) Forzar que los clientes (PWA) recarguen los estáticos sin caché vieja */
 $sw = $root . '/service-worker.js';
 if (is_file($sw)) {
     $content = (string)file_get_contents($sw);
@@ -106,7 +133,7 @@ if (is_file($sw)) {
     @file_put_contents($sw, $content);
 }
 
-/* 5) Escribir la versión instalada y ejecutar migraciones de esquema */
+/* 6) Escribir la versión instalada y ejecutar migraciones de esquema */
 @file_put_contents($root . '/version.txt', $target);
 try {
     run_migrations(db());
@@ -114,7 +141,7 @@ try {
     /* Se avisa igualmente: la app puede funcionar aunque una migración falle */
 }
 
-/* 6) Registrar y notificar */
+/* 7) Registrar y notificar */
 update_log($rel['tag'], 'update-installed', 'v' . $cur . ' -> v' . $target);
 try {
     $stmt = db()->query('SELECT id FROM ' . t('users') . ' WHERE is_admin = 1');

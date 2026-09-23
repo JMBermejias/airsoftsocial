@@ -325,17 +325,47 @@ function update_log(string $tag, string $event, string $detail = ''): void {
     @file_put_contents($f, json_encode($log, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 }
 
-function gh_get(string $url): ?array {
+/* Última release sin gastar la API de GitHub (la API limita a 60/h por IP,
+ * algo habitual en hosting compartido): /releases/latest responde con un
+ * redirect a /releases/tag/vX.Y.Z y ese redirect nos da la versión. */
+function gh_latest_tag(): ?string {
     $ctx = stream_context_create(['http' => [
         'method' => 'GET',
         'timeout' => 10,
-        'header' => "User-Agent: SocialAirsoft-Update\r\nAccept: application/vnd.github+json\r\n",
+        'header' => "User-Agent: SocialAirsoft-Update\r\n",
         'ignore_errors' => true,
+        'follow_location' => 0,
+        'max_redirects' => 0,
     ]]);
-    $raw = @file_get_contents($url, false, $ctx);
+    $headers = @get_headers('https://github.com/' . update_github_repo() . '/releases/latest', 1, $ctx);
+    if (!is_array($headers)) return null;
+    foreach ($headers as $k => $v) {
+        if (strcasecmp((string)$k, 'Location') !== 0) continue;
+        foreach (is_array($v) ? $v : [$v] as $loc) {
+            if (preg_match('#/releases/tag/(v\d+\.\d+\.\d+)#', (string)$loc, $m)) return $m[1];
+        }
+    }
+    return null;
+}
+
+/* Última release vía API de GitHub. Usa GITHUB_TOKEN (opcional en config.php)
+ * para evitar el límite de 60 peticiones/h por IP en hosting compartido. */
+function gh_api_latest(): ?array {
+    $h = "User-Agent: SocialAirsoft-Update\r\nAccept: application/vnd.github+json\r\n";
+    if (defined('GITHUB_TOKEN') && GITHUB_TOKEN !== '') {
+        $h .= 'Authorization: Bearer ' . GITHUB_TOKEN . "\r\n";
+    }
+    $ctx = stream_context_create(['http' => ['method' => 'GET', 'timeout' => 12, 'header' => $h, 'ignore_errors' => true]]);
+    $raw = @file_get_contents('https://api.github.com/repos/' . update_github_repo() . '/releases/latest', false, $ctx);
     if ($raw === false) return null;
-    $data = json_decode($raw, true);
-    return is_array($data) ? $data : null;
+    $d = json_decode($raw, true);
+    if (!is_array($d) || !isset($d['tag_name'])) return null;
+    return [
+        'tag' => (string)$d['tag_name'],
+        'name' => (string)($d['name'] ?? $d['tag_name']),
+        'body' => (string)($d['body'] ?? ''),
+        'published_at' => (string)($d['published_at'] ?? ''),
+    ];
 }
 
 /* Última release publicada en GitHub (cacheada N horas). Nunca lanza errores. */
@@ -344,16 +374,15 @@ function latest_release(bool $force = false): array {
     if (!$force && is_array($cache) && time() - (int)update_state_read('checked_at', 0) < update_check_hours() * 3600) {
         return $cache;
     }
-    $data = gh_get('https://api.github.com/repos/' . update_github_repo() . '/releases/latest');
-    $result = ['ok' => false, 'error' => 'No se pudo contactar con GitHub.'];
-    if (is_array($data) && isset($data['tag_name'])) {
-        $result = [
-            'ok' => true,
-            'tag' => (string)$data['tag_name'],
-            'name' => (string)($data['name'] ?? $data['tag_name']),
-            'body' => (string)($data['body'] ?? ''),
-            'published_at' => (string)($data['published_at'] ?? ''),
-        ];
+    $result = gh_api_latest();
+    if (!$result) {
+        $tag = gh_latest_tag();
+        if ($tag) $result = ['tag' => $tag, 'name' => $tag, 'body' => '', 'published_at' => ''];
+    }
+    if (!$result) {
+        $result = ['ok' => false, 'error' => 'No se pudo contactar con GitHub.'];
+    } else {
+        $result['ok'] = true;
     }
     update_state_write(['release' => $result, 'checked_at' => time()]);
     return $result;
