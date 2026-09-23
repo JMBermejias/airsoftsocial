@@ -51,8 +51,18 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Android SDK (preinstalado en el runner)
+        run: |
+          SDK=/usr/local/lib/android/sdk
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+          SM=$(ls -d "$SDK"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | tail -1 || true)
+          if [ -n "$SM" ]; then
+            yes | "$SM" --licenses >/dev/null 2>&1 || true
+            "$SM" "platforms;android-34" "build-tools;34.0.0" >/dev/null 2>&1 || true
+          fi
+          ls "$SDK/platforms" 2>/dev/null | sed 's/^/  platform: /' || true
+          ls "$SDK/build-tools" 2>/dev/null | sed 's/^/  build-tools: /' || true
       - name: Keystore (se usa el secreto ANDROID_KEYSTORE_BASE64 si existe; si no, se genera)
         run: |
           if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ]; then
