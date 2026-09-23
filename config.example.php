@@ -18,3 +18,14 @@ define('APP_NAME', 'Social Airsoft');
 
 /* Zona horaria por defecto */
 date_default_timezone_set('Europe/Madrid');
+
+/* ------------------------------------------------------------
+ * ACTUALIZACIONES AUTOMÁTICAS  (opcional)
+ * La app comprueba si hay una release más reciente en GitHub y te avisa
+ * como administrador. Tú decides cuándo aplicarla (botón "Actualizar").
+ *   GITHUB_REPO         → repo de donde salen las actualizaciones.
+ *   UPDATE_CHECK_HOURS  → cada cuántas horas se comprueba (defecto 6).
+ * Deja esto como está si usas las releases oficiales.
+ * ------------------------------------------------------------ */
+define('GITHUB_REPO', 'JMBermejias/socialairsoft');
+define('UPDATE_CHECK_HOURS', 6);

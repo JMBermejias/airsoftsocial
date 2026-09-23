@@ -266,3 +266,135 @@ function render_tags(string $tags): string {
     }
     return $html;
 }
+
+/* ---------- Auto-actualización ----------
+ * La instalación comprueba periódicamente GitHub (laguna de confianza: el
+ * repost gields `GITHUB_REPO`, por defecto el oficial). Cuando hay una
+ * release más moderna que `version.txt` se avisa al administrador y se
+ * ofrece aplicar la actualización desde el panel (actions/update.php).
+ */
+
+function update_github_repo(): string {
+    return defined('GITHUB_REPO') && GITHUB_REPO ? (string)GITHUB_REPO : 'JMBermejias/socialairsoft';
+}
+
+function update_check_hours(): int {
+    return defined('UPDATE_CHECK_HOURS') ? (int)UPDATE_CHECK_HOURS : 6;
+}
+
+function app_version(): string {
+    static $v = null;
+    if ($v === null) {
+        $f = __DIR__ . '/../version.txt';
+        $v = is_file($f) ? trim((string)file_get_contents($f)) : '0.0.0';
+    }
+    return $v;
+}
+
+/* Estado interno del actualizador dentro de uploads/ (no tocarlo al actualizar). */
+function update_state_dir(): string {
+    $dir = dirname(__DIR__) . '/uploads/_system';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0775, true);
+        @file_put_contents($dir . '/.htaccess', "Require all denied\n");
+        @file_put_contents($dir . '/index.html', '');
+    }
+    return $dir;
+}
+
+function update_state_read(string $key, $default = null) {
+    $f = update_state_dir() . '/state.json';
+    $data = is_file($f) ? json_decode((string)file_get_contents($f), true) : [];
+    return is_array($data) && array_key_exists($key, $data) ? $data[$key] : $default;
+}
+
+function update_state_write(array $patch): void {
+    $f = update_state_dir() . '/state.json';
+    $data = is_file($f) ? json_decode((string)file_get_contents($f), true) : [];
+    if (!is_array($data)) $data = [];
+    foreach ($patch as $k => $v) $data[$k] = $v;
+    @file_put_contents($f, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+}
+
+function update_log(string $tag, string $event, string $detail = ''): void {
+    $f = update_state_dir() . '/log.json';
+    $log = is_file($f) ? json_decode((string)file_get_contents($f), true) : [];
+    if (!is_array($log)) $log = [];
+    array_unshift($log, ['date' => date('Y-m-d H:i:s'), 'tag' => $tag, 'event' => $event, 'detail' => $detail]);
+    $log = array_slice($log, 0, 20);
+    @file_put_contents($f, json_encode($log, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+}
+
+function gh_get(string $url): ?array {
+    $ctx = stream_context_create(['http' => [
+        'method' => 'GET',
+        'timeout' => 10,
+        'header' => "User-Agent: SocialAirsoft-Update\r\nAccept: application/vnd.github+json\r\n",
+        'ignore_errors' => true,
+    ]]);
+    $raw = @file_get_contents($url, false, $ctx);
+    if ($raw === false) return null;
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : null;
+}
+
+/* Última release publicada en GitHub (cacheada N horas). Nunca lanza errores. */
+function latest_release(bool $force = false): array {
+    $cache = update_state_read('release', null);
+    if (!$force && is_array($cache) && time() - (int)update_state_read('checked_at', 0) < update_check_hours() * 3600) {
+        return $cache;
+    }
+    $data = gh_get('https://api.github.com/repos/' . update_github_repo() . '/releases/latest');
+    $result = ['ok' => false, 'error' => 'No se pudo contactar con GitHub.'];
+    if (is_array($data) && isset($data['tag_name'])) {
+        $result = [
+            'ok' => true,
+            'tag' => (string)$data['tag_name'],
+            'name' => (string)($data['name'] ?? $data['tag_name']),
+            'body' => (string)($data['body'] ?? ''),
+            'published_at' => (string)($data['published_at'] ?? ''),
+        ];
+    }
+    update_state_write(['release' => $result, 'checked_at' => time()]);
+    return $result;
+}
+
+/* Devuelve los datos de una actualización disponible (o null si no hay). */
+function update_available(): ?array {
+    if (!is_admin()) return null;
+    $rel = latest_release();
+    if (empty($rel['ok']) || !preg_match('/^v\d+\.\d+\.\d+$/', $rel['tag'])) return null;
+    $cur = app_version();
+    if (version_compare(ltrim($rel['tag'], 'v'), $cur, '<=')) return null;
+    return ['current' => $cur, 'latest' => ltrim($rel['tag'], 'v'), 'tag' => $rel['tag'], 'name' => $rel['name'], 'body' => $rel['body']];
+}
+
+/* Avisa a los administradores (campanilla) una sola vez por versión. */
+function update_notify_admins(): void {
+    if (!is_admin()) return;
+    $rel = latest_release();
+    if (empty($rel['ok']) || !preg_match('/^v\d+\.\d+\.\d+$/', $rel['tag'])) return;
+    $latest = ltrim($rel['tag'], 'v');
+    if (version_compare($latest, app_version(), '<=')) return;
+    $key = 'notified_' . $latest;
+    if (update_state_read($key, false)) return;
+    $sent = false;
+    try {
+        $stmt = db()->query('SELECT id FROM ' . t('users') . ' WHERE is_admin = 1');
+        foreach ($stmt->fetchAll() as $u) {
+            try {
+                notify((int)$u['id'], null, 'update', 'Nueva versión ' . $latest . ' disponible. ¡Actualiza!', 'updates.php');
+                $sent = true;
+            } catch (Throwable $e) {}
+        }
+    } catch (Throwable $e) {}
+    if ($sent) update_state_write([$key => true]);
+}
+
+/* Migraciones de esquema compartidas por install.php y el auto-actualizador.
+ * Se ejecutan siempre: deben ser idempotentes. */
+function run_migrations(PDO $pdo): void {
+    try {
+        $pdo->exec('ALTER TABLE stories MODIFY expires_at DATETIME DEFAULT NULL COMMENT "NULL = permanente; con fecha = expira"');
+    } catch (PDOException $e) { /* tabla nueva o ya migrada */ }
+}

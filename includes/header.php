@@ -11,6 +11,14 @@ if ($unread > 0) {
     $s->execute([$me['id']]);
     $notifs = $s->fetchAll();
 }
+
+/* Auto-actualización: avisa a los admins si hay release más reciente */
+$updateBanner = null;
+if (is_admin()) {
+    update_notify_admins();
+    $upd = update_available();
+    if ($upd) $updateBanner = $upd;
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -27,7 +35,7 @@ if ($unread > 0) {
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>
-<link rel="stylesheet" href="assets/css/style.css?v=2">
+<link rel="stylesheet" href="assets/css/style.css?v=3">
 </head>
 <body>
 <div class="layout">
@@ -77,6 +85,10 @@ if ($unread > 0) {
       <a href="admin.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'admin.php' ? 'active' : '' ?>">
         <span class="nav-ico">🛠️</span> Panel admin
       </a>
+      <a href="updates.php" class="nav-item <?= strpos(basename($_SERVER['PHP_SELF']), 'updates') === 0 ? 'active' : '' ?>">
+        <span class="nav-ico">⬆️</span> Actualizar app
+        <?php if ($updateBanner): ?><span class="badge"><?= e($updateBanner['latest']) ?></span><?php endif; ?>
+      </a>
       <?php endif; ?>
     </nav>
 
@@ -106,7 +118,14 @@ if ($unread > 0) {
   </aside>
 
   <!-- ===================== ÁREA DE TRABAJO ===================== -->
-  <main class="content"><?php if (!empty($page_title)): ?>
+  <main class="content">
+  <?php if ($updateBanner): ?>
+    <div class="update-banner">
+      <span>⬆️ Nueva versión <strong>v<?= e($updateBanner['latest']) ?></strong> de <?= e(APP_NAME) ?> disponible</span>
+      <a class="btn btn-small btn-primary" href="updates.php">Ver y actualizar</a>
+    </div>
+  <?php endif; ?>
+  <?php if (!empty($page_title)): ?>
     <div class="page-head">
       <h2><?= e($page_title) ?></h2>
       <?php if (!empty($page_subtitle)): ?><p><?= e($page_subtitle) ?></p><?php endif; ?>

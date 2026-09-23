@@ -48,11 +48,8 @@ if ($step === 1 && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errs) {
-        /* Migración: las historias son permanentes (expires_at nullable).
-         * En instalaciones antiguas la columna era NOT NULL; se actualiza sin tocar datos. */
-        try {
-            $pdo->exec('ALTER TABLE stories MODIFY expires_at DATETIME DEFAULT NULL COMMENT "NULL = permanente; con fecha = expira"');
-        } catch (PDOException $e) { /* tabla nueva o ya migrada */ }
+        /* Migraciones de esquema (idempotentes) */
+        run_migrations($pdo);
     }
 
     if (!$errs) {

@@ -370,6 +370,19 @@ textarea{resize:vertical}
 .modal.hidden{display:none}
 .modal .card{width:min(520px,94vw)}
 
+/* ---------- ACTUALIZACIÓN AUTOMÁTICA ---------- */
+.update-banner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:linear-gradient(180deg,rgba(232,147,47,.18),rgba(232,147,47,.07));border:1px solid var(--accent);color:var(--text);padding:10px 14px;border-radius:var(--radius);margin-bottom:16px;font-size:14px}
+.update-banner strong{color:#fff}
+.update-banner .btn{margin-left:auto}
+.update-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.big-version{margin:4px 0;font-size:30px}
+.big-version strong{color:var(--lime)}
+.update-available{border-color:var(--accent)}
+.lime{color:var(--lime)}
+.ok-text{font-size:15px}
+.changelog{background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:13px;max-height:260px;overflow-y:auto;white-space:pre-line}
+.help-list{margin:0;padding-left:20px;line-height:1.7}
+
 /* ---------- AUTENTICACIÓN ---------- */
 .auth-body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 20% 0%,rgba(232,147,47,.12),transparent 55%),var(--bg-soft)}
 .auth-wrap{width:min(880px,94vw);display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:center}
