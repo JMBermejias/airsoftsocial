@@ -12,8 +12,21 @@ stop() {
 }
 [ "$1" = "stop" ] && stop
 
-# 1) MariaDB
-mysql.server status >/dev/null 2>&1 || mysql.server start || { echo "ERROR: no pude arrancar MariaDB (mysql.server start)"; exit 1; }
+# 1) MariaDB: limpiamos restos de un apagado brusco y arrancamos en el puerto
+#    de la app (3307, fijado en brew/etc/my.cnf.d/socialairsoft.cnf).
+HOMEBREW_PREFIX="$(brew --prefix 2>/dev/null || echo "$HOME/brew")"
+DB_PORT="${DB_PORT:-3307}"
+DB_USER="${DB_USER:-social}"
+DB_PASS="${DB_PASS:-social_test_2026}"
+rm -f "$HOMEBREW_PREFIX/var/mysql/"*.pid "$HOMEBREW_PREFIX/var/mysql/"*.sock 2>/dev/null
+if mysqladmin ping --host=127.0.0.1 --port="$DB_PORT" --user="$DB_USER" --password="$DB_PASS" --silent >/dev/null 2>&1; then
+    echo "MariaDB ya está activo en 127.0.0.1:$DB_PORT"
+else
+    mysql.server start || { echo "ERROR: no pude arrancar MariaDB (mysql.server start). Revisa brew/etc/my.cnf.d/"; exit 1; }
+    sleep 2
+    mysqladmin ping --host=127.0.0.1 --port="$DB_PORT" --user="$DB_USER" --password="$DB_PASS" --silent >/dev/null 2>&1 \
+        || { echo "ERROR: MariaDB no responde en 127.0.0.1:$DB_PORT"; exit 1; }
+fi
 
 # 2) Servidor PHP embebido
 if ! pgrep -f "php -S 127.0.0.1:$PORT" >/dev/null 2>&1; then
