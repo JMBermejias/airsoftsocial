@@ -48,7 +48,7 @@ require_once __DIR__ . '/includes/header.php';
       <?= rank_badge($user) ?>
       <?php if ($user['is_admin']): ?><span class="admin-badge">Administrador</span><?php endif; ?>
     </h2>
-    <p class="muted"><?= e($user['full_name'] ?: 'Miembro de Social Airsoft') ?> · se unió el <?= date('d/m/Y', strtotime($user['created_at'])) ?></p>
+    <p class="muted"><?= e($user['full_name'] ?: 'Miembro de Airsoft Social') ?> · se unió el <?= date('d/m/Y', strtotime($user['created_at'])) ?></p>
     <div class="profile-stats">
       <span><strong><?= $fcount ?></strong> amigos</span>
       <span><strong><?= $isOwner || $canSeePosts ? 'participa en la red' : '…' ?></strong></span>

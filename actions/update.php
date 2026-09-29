@@ -52,7 +52,7 @@ $url = 'https://codeload.github.com/' . update_github_repo() . '/tar.gz/refs/tag
 $ctx = stream_context_create(['http' => [
     'method' => 'GET',
     'timeout' => 90,
-    'header' => "User-Agent: SocialAirsoft-Update\r\n",
+    'header' => "User-Agent: AirsoftSocial-Update\r\n",
     'ignore_errors' => true,
 ]]);
 $dl = @file_put_contents($tgz, @file_get_contents($url, false, $ctx));
@@ -87,7 +87,7 @@ try {
 }
 
 /* 3) Detectar el directorio raíz del paquete (GitHub lo nombra
- *    socialairsoft-{tag} sin la v inicial). No se asume el nombre exacto. */
+ *    airsoftsocial-{tag} sin la v inicial). No se asume el nombre exacto. */
 $pkg = null;
 foreach ((array)@scandir($extract) as $it) {
     if ($it === '.' || $it === '..') continue;

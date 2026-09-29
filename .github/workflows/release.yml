@@ -73,13 +73,13 @@ jobs:
             echo "KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
           else
             keytool -genkeypair -v -keystore keystore.jks \
-              -storepass socialairsoft -keypass socialairsoft -alias socialairsoft \
+              -storepass airsoftsocial -keypass airsoftsocial -alias airsoftsocial \
               -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Social Airsoft, OU=CI, O=SocialAirsoft, L=Madrid, C=ES" >/dev/null 2>&1
+              -dname "CN=Airsoft Social, OU=CI, O=AirsoftSocial, L=Madrid, C=ES" >/dev/null 2>&1
             echo "KEYSTORE_FILE=$PWD/keystore.jks" >> "$GITHUB_ENV"
-            echo "KEYSTORE_PASSWORD=socialairsoft" >> "$GITHUB_ENV"
-            echo "KEY_ALIAS=socialairsoft" >> "$GITHUB_ENV"
-            echo "KEY_PASSWORD=socialairsoft" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=airsoftsocial" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=airsoftsocial" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=airsoftsocial" >> "$GITHUB_ENV"
           fi
       - name: Versión de la app
         id: v
@@ -99,9 +99,9 @@ jobs:
         run: |
           mkdir -p dist
           VN=${{ steps.v.outputs.versionName }}
-          cp android/app/build/outputs/apk/release/app-release.apk "dist/socialairsoft-${VN}.apk"
-          cp android/app/build/outputs/bundle/release/app-release.aab "dist/socialairsoft-${VN}.aab"
-          cp keystore.jks "dist/socialairsoft-${VN}-keystore-backup.jks"
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/airsoftsocial-${VN}.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "dist/airsoftsocial-${VN}.aab"
+          cp keystore.jks "dist/airsoftsocial-${VN}-keystore-backup.jks"
       - uses: actions/upload-artifact@v4
         with:
           name: android-release

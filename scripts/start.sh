@@ -1,5 +1,5 @@
 #!/bin/sh
-# Arranca Social Airsoft en local (desarrollo).
+# Arranca Airsoft Social en local (desarrollo).
 # Uso: scripts/start.sh   |   scripts/start.sh stop
 export PATH="/home/jmbernabeu/brew/bin:$PATH"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -17,7 +17,7 @@ stop() {
 [ "$1" = "stop" ] && stop
 
 # 1) MariaDB: limpiamos restos de un apagado brusco y arrancamos en el puerto
-#    de la app (3307, fijado en brew/etc/my.cnf.d/socialairsoft.cnf).
+#    de la app (3307, fijado en brew/etc/my.cnf.d/airsoftsocial.cnf).
 HOMEBREW_PREFIX="$(brew --prefix 2>/dev/null || echo "$HOME/brew")"
 DB_PORT="${DB_PORT:-3307}"
 DB_USER="${DB_USER:-social}"
@@ -37,13 +37,13 @@ fi
 #    (que abren conexiones paralelas) se cuelen. El bind [::] responde también
 #    en 127.0.0.1, así localhost funciona igual en stacks IPv4 e IPv6.
 if ! pgrep -f "php -S \[::\]:$PORT" >/dev/null 2>&1 && ! pgrep -f "php -S 127.0.0.1:$PORT" >/dev/null 2>&1; then
-    (cd "$ROOT" && PHP_CLI_SERVER_WORKERS=4 nohup php -S "$BIND" >/tmp/opencode/php-server.log 2>&1 &)
+    (cd "$ROOT" && PHP_CLI_SERVER_WORKERS=4 nohup php -S "$BIND" >/tmp/php-server.log 2>&1 &)
     sleep 1
 fi
 if curl -s -o /dev/null --max-time 3 "http://127.0.0.1:$PORT/"; then
     echo "Servidor web OK en 127.0.0.1:$PORT"
 else
-    echo "ERROR: el servidor web no responde. Revisa /tmp/opencode/php-server.log"
+    echo "ERROR: el servidor web no responde. Revisa /tmp/php-server.log"
     exit 1
 fi
 echo "------------------------------------------"

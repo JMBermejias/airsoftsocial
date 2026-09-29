@@ -25,7 +25,7 @@ if (is_admin()) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Social Airsoft: red social para la comunidad airsoft. Noticias, historias, amigos, campos de juego y tienda online.">
+<meta name="description" content="Airsoft Social: red social para la comunidad airsoft. Noticias, historias, amigos, campos de juego y tienda online.">
 <meta name="theme-color" content="#3a4b3b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -102,7 +102,7 @@ if (is_admin()) {
         <?php if ($notifs): ?>
           <?php foreach ($notifs as $n): ?>
             <a class="notif-item <?= !$n['is_read'] ? 'unread' : '' ?>" href="<?= e($n['link'] ?? 'feed.php') ?>">
-              <strong><?= e($n['actor'] ?? 'Social Airsoft') ?></strong>
+              <strong><?= e($n['actor'] ?? 'Airsoft Social') ?></strong>
               <span><?= e($n['message']) ?></span>
             </a>
           <?php endforeach; ?>

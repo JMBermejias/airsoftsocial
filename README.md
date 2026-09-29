@@ -1,4 +1,4 @@
-# 🎯 Social Airsoft
+# 🎯 Airsoft Social
 
 Red social para la comunidad de **airsoft** pensada para alojarse en cualquier **hosting compartido** (cPanel, Plesk, etc.) con **PHP 7.4+ / 8.x** y **MySQL / MariaDB**. Sin frameworks ni dependencias: solo PHP, MySQL y un poco de JavaScript.
 
@@ -70,7 +70,7 @@ install.php    → instalador guiado (¡borrar después!)
 
 ## ⬆️ Actualización automática
 
-Social Airsoft se mantiene al día sin tocar nada:
+Airsoft Social se mantiene al día sin tocar nada:
 
 1. Cada **6 horas** (cuando entra un administrador) consulta GitHub (`GITHUB_REPO`, por defecto las releases oficiales de este repo).
 2. Si hay una versión nueva, te llega un **aviso** en la campanilla, un distintivo en el menú **⬆️ Actualizar app** y un banner con el botón **Ver y actualizar**.
@@ -80,7 +80,7 @@ Social Airsoft se mantiene al día sin tocar nada:
 Opciones de configuración (en `config.php`):
 
 ```php
-define('GITHUB_REPO', 'JMBermejias/socialairsoft'); // repo de las actualizaciones
+define('GITHUB_REPO', 'JMBermejias/airsoftsocial'); // repo de las actualizaciones
 define('UPDATE_CHECK_HOURS', 6);                    // cada cuántas horas comprobar
 define('GITHUB_TOKEN', '');                         // opcional: evita límites de la API
 ```
@@ -101,10 +101,10 @@ La web es una **Progressive Web App**: se instala **como una aplicación con su 
 
 El repositorio incluye automatización para generar instaladores listos para descargar:
 
-- **`.deb`** (Linux Debian/Ubuntu): instala la red social como `/var/www/socialairsoft` con `nginx` o `apache2` + `php-fpm` + `mariadb`.
+- **`.deb`** (Linux Debian/Ubuntu): instala la red social como `/var/www/airsoftsocial` con `nginx` o `apache2` + `php-fpm` + `mariadb`.
 - **`.apk` / `.aab`** (Android): app envoltorio con WebView que abre tu red social.
 
-Cada vez que crees una nueva versión (ver `release.sh`) se generan automáticamente en [GitHub Releases](https://github.com/JMBermejias/socialairsoft/releases) mediante un workflow de GitHub Actions.
+Cada vez que crees una nueva versión (ver `release.sh`) se generan automáticamente en [GitHub Releases](https://github.com/JMBermejias/airsoftsocial/releases) mediante un workflow de GitHub Actions.
 
 ```
 ./release.sh "v1.0.0" "Mensaje de la versión"

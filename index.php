@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Social Airsoft: red social para la comunidad airsoft. Noticias, historias, amigos, campos de juego y tienda online.">
+<meta name="description" content="Airsoft Social: red social para la comunidad airsoft. Noticias, historias, amigos, campos de juego y tienda online.">
 <meta name="theme-color" content="#3a4b3b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <button class="btn btn-primary btn-block" type="submit">Crear cuenta</button>
     </form>
   </div>
-  <button class="btn btn-ghost btn-block pwa-install" onclick="pwaInstall()" style="margin-top:12px">⬇️ Instalar Social Airsoft en el escritorio / móvil</button>
+  <button class="btn btn-ghost btn-block pwa-install" onclick="pwaInstall()" style="margin-top:12px">⬇️ Instalar Airsoft Social en el escritorio / móvil</button>
 </div>
 <script src="assets/js/app.js?v=4"></script>
 <script>

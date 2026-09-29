@@ -1,6 +1,6 @@
 <?php
 /**
- * Funciones y helpers de Social Airsoft
+ * Funciones y helpers de Airsoft Social
  */
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -36,8 +36,25 @@ function e(?string $v): string {
     return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 }
 
+/* Ruta base de la app en la URL ('' si está en la raíz del hosting, o '/subcarpeta').
+ * Necesario para que los redirect() funcionen estando dentro de actions/. */
+function app_base(): string {
+    static $base = false;
+    if ($base === false) {
+        $root = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? ''), '/');
+        $dir = str_replace('\\', '/', dirname(__DIR__));
+        $rel = ($root !== '' && strpos($dir, $root) === 0) ? substr($dir, strlen($root)) : '';
+        $base = rtrim('/' . trim($rel, '/'), '/');
+    }
+    return $base;
+}
+
 function redirect(string $path): void {
-    header('Location: ' . $path);
+    if (preg_match('#^https?://#i', $path) || str_starts_with($path, '/')) {
+        header('Location: ' . $path);
+    } else {
+        header('Location: ' . app_base() . '/' . $path);
+    }
     exit;
 }
 
@@ -121,6 +138,7 @@ function upload_file(array $file, string $folder, string $kind = 'image'): array
     }
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $file['tmp_name']);
+    if (PHP_VERSION_ID < 80000) finfo_close($finfo);
 
     $ok = ($kind === 'image' && in_array($mime, MIME_IMG, true))
         || ($kind === 'pdf' && $mime === 'application/pdf')
@@ -255,6 +273,115 @@ function product_buy_url(array $p): ?string {
     return $u;
 }
 
+/* Abre una URL imitando un navegador real (UA, Accept-Language, Referer).
+ * Devuelve [código HTTP, contenido HTML] o [0/null]. */
+function http_get_like_browser(string $url): array {
+    $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 5,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 25,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_USERAGENT => $ua,
+        CURLOPT_HTTPHEADER => [
+            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language: es-ES,es;q=0.9,en;q=0.8',
+            'Referer: https://www.amazon.es/',
+        ],
+    ]);
+    $html = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if (PHP_VERSION_ID < 80000) curl_close($ch);
+    return [$code, $html === false ? '' : (string)$html];
+}
+
+/* Extrae título, precio, imagen y descripción reales de un enlace de tienda
+ * (afiliado), leyendo las etiquetas OpenGraph o los selectores de Amazon.
+ * Devuelve ['name','price','image','description'] y, si no se puede leer, 'error'. */
+function fetch_product_meta(string $url): array {
+    $out = ['name' => '', 'price' => '', 'image' => '', 'description' => ''];
+    [$code, $html] = http_get_like_browser($url);
+    if ($code !== 200 || $html === '' || stripos($html, 'captcha') !== false) {
+        $out['error'] = 'La tienda bloqueó la lectura automática del enlace (verificación anti-bots). Copia el nombre, la imagen y el precio manualmente.';
+        return $out;
+    }
+
+    if (preg_match('~<meta[^>]+property="og:title"[^>]+content="([^"]+)"~i', $html, $m)) {
+        $out['name'] = html_entity_decode(trim($m[1]), ENT_QUOTES, 'UTF-8');
+    } elseif (preg_match('~<span[^>]+id="productTitle"[^>]*>(.*?)</span>~si', $html, $m)) {
+        $out['name'] = html_entity_decode(trim(strip_tags($m[1])), ENT_QUOTES, 'UTF-8');
+    }
+
+    if (preg_match('~<meta[^>]+(?:property="og:description"|name="description")[^>]+content="([^"]+)"~i', $html, $m)) {
+        $out['description'] = html_entity_decode(trim($m[1]), ENT_QUOTES, 'UTF-8');
+    }
+
+    if (preg_match('~<meta[^>]+property="(?:product|og):price:amount"[^>]+content="([0-9.,]+)"~i', $html, $m)) {
+        $out['price'] = trim($m[1]) . ' €';
+    } elseif (preg_match('~"displayPrice":"([0-9.,]+)\s*[€E]?[^"]*"~i', $html, $m)) {
+        $out['price'] = trim($m[1]) . ' €';
+    } elseif (preg_match('~<span class="a-price-whole">([0-9.,]+)</span>\s*<span class="a-price-fraction">([0-9]+)</span>~', $html, $m)) {
+        $out['price'] = $m[1] . ',' . $m[2] . ' €';
+    } elseif (preg_match('~<span class="a-offscreen">\s*([0-9.,]+)\s*(?:[€E]|[A-Z]{2,3})?\s*</span>~i', $html, $m)) {
+        $out['price'] = trim($m[1]) . ' €';
+    }
+
+    if (preg_match('~<meta[^>]+property="og:image"[^>]+content="([^"]+)"~i', $html, $m)) {
+        $out['image'] = trim($m[1]);
+    } else {
+        // Amazon: la imagen principal viene primero en landingImage / "large" / "hiRes"
+        if (preg_match('~id="landingImage"[^>]*src="([^"]+)"~i', $html, $m)) {
+            $out['image'] = trim($m[1]);
+        } elseif (preg_match('~"large":"(https://m\.media-amazon\.com/images/I/[^"]+)"~i', $html, $m)) {
+            $out['image'] = trim($m[1]);
+        } elseif (preg_match('~"hiRes":"(https://m\.media-amazon\.com/images/I/[^"]+)"~i', $html, $m)) {
+            $out['image'] = trim($m[1]);
+        } elseif (preg_match('~https://m\.media-amazon\.com/images/I/([A-Za-z0-9._-]+)\.~', $html, $m)) {
+            $out['image'] = 'https://m.media-amazon.com/images/I/' . $m[1] . '._AC_SL1500_.jpg';
+        }
+    }
+    return $out;
+}
+
+/* Descarga una imagen remota dentro de uploads/ y devuelve la ruta local, o null. */
+function save_remote_image(string $url, string $folder): ?string {
+    if (!preg_match('#^https?://#i', $url)) return null;
+    $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 3,
+        CURLOPT_CONNECTTIMEOUT => 8,
+        CURLOPT_TIMEOUT => 25,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_USERAGENT => $ua,
+    ]);
+    $data = curl_exec($ch);
+    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if (PHP_VERSION_ID < 80000) curl_close($ch);
+    if ($data === false || $code !== 200 || $data === '') return null;
+
+    $tmp = tempnam(sys_get_temp_dir(), 'prodimg');
+    if ($tmp === false) return null;
+    file_put_contents($tmp, $data);
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime = finfo_file($finfo, $tmp);
+    if (PHP_VERSION_ID < 80000) finfo_close($finfo);
+    if (!in_array($mime, MIME_IMG, true)) { @unlink($tmp); return null; }
+
+    $ext = str_replace('image/', '', $mime);
+    if ($ext === 'svg+xml') $ext = 'svg';
+    $name = bin2hex(random_bytes(8)) . '.' . $ext;
+    $base = dirname(__DIR__) . '/uploads/' . $folder;
+    if (!is_dir($base)) mkdir($base, 0775, true);
+    if (!rename($tmp, $base . '/' . $name)) { @unlink($tmp); return null; }
+    return 'uploads/' . $folder . '/' . $name;
+}
+
 /* ---------- Amistades ---------- */
 
 function friendship_status(int $me, int $other): string {
@@ -345,7 +472,7 @@ function render_tags(string $tags): string {
  */
 
 function update_github_repo(): string {
-    return defined('GITHUB_REPO') && GITHUB_REPO ? (string)GITHUB_REPO : 'JMBermejias/socialairsoft';
+    return defined('GITHUB_REPO') && GITHUB_REPO ? (string)GITHUB_REPO : 'JMBermejias/airsoftsocial';
 }
 
 function update_check_hours(): int {
@@ -402,7 +529,7 @@ function gh_latest_tag(): ?string {
     $ctx = stream_context_create(['http' => [
         'method' => 'GET',
         'timeout' => 10,
-        'header' => "User-Agent: SocialAirsoft-Update\r\n",
+        'header' => "User-Agent: AirsoftSocial-Update\r\n",
         'ignore_errors' => true,
         'follow_location' => 0,
         'max_redirects' => 0,
@@ -421,7 +548,7 @@ function gh_latest_tag(): ?string {
 /* Última release vía API de GitHub. Usa GITHUB_TOKEN (opcional en config.php)
  * para evitar el límite de 60 peticiones/h por IP en hosting compartido. */
 function gh_api_latest(): ?array {
-    $h = "User-Agent: SocialAirsoft-Update\r\nAccept: application/vnd.github+json\r\n";
+    $h = "User-Agent: AirsoftSocial-Update\r\nAccept: application/vnd.github+json\r\n";
     if (defined('GITHUB_TOKEN') && GITHUB_TOKEN !== '') {
         $h .= 'Authorization: Bearer ' . GITHUB_TOKEN . "\r\n";
     }

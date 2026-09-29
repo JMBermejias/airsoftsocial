@@ -37,13 +37,18 @@ require_once __DIR__ . '/includes/header.php';
         </label>
       </div>
       <label>Enlace de compra (URL de tu tienda)
-        <input type="url" name="url" value="<?= e($editing['url'] ?? '') ?>" placeholder="https://tu-tienda.es/producto">
+        <input type="url" name="url" id="prod-url" value="<?= e($editing['url'] ?? '') ?>" placeholder="https://tu-tienda.es/producto">
       </label>
+      <p class="muted">
+        <button type="button" class="btn btn-small btn-ghost" id="btn-fetch-url">✨ Rellenar datos del enlace</button>
+        <span id="fetch-status"></span>
+      </p>
       <label>Descripción
         <textarea name="description" rows="3"><?= e($editing['description'] ?? '') ?></textarea>
       </label>
       <div class="field-label">Imagen de producto</div>
       <label class="file-picker"><input type="file" name="image" accept="image/*"> 📷 Subir imagen</label>
+      <input type="hidden" name="image_imported" id="image-imported" value="">
       <?php if (!empty($editing['image'])): ?><img class="thumb" src="<?= e($editing['image']) ?>" alt=""><?php endif; ?>
       <label class="tool"><input type="checkbox" name="active" value="1" <?= !isset($editing) || $editing['active'] ? 'checked' : '' ?>> Producto activo (visible)</label>
       <div class="form-actions">
@@ -51,6 +56,39 @@ require_once __DIR__ . '/includes/header.php';
         <?php if ($editing): ?><a class="btn btn-ghost" href="store_admin.php">Cancelar</a><?php endif; ?>
       </div>
     </form>
+    <script>
+    (function(){
+      var btn = document.getElementById('btn-fetch-url');
+      if (!btn) return;
+      btn.addEventListener('click', function(){
+        var url = (document.getElementById('prod-url').value || '').trim();
+        var status = document.getElementById('fetch-status');
+        if (!url) { status.textContent = 'Introduce primero el enlace.'; return; }
+        if (!window.CS_RF) { status.textContent = 'Sesión expirada, recarga la página.'; return; }
+        btn.disabled = true;
+        status.textContent = 'Leyendo la tienda…';
+        var body = new URLSearchParams();
+        body.append('csrf', window.CS_RF);
+        body.append('url', url);
+        fetch('actions/fetch_product.php', { method: 'post', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: body.toString() })
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            btn.disabled = false;
+            if (!d.ok) { status.textContent = d.error || 'No se pudo leer el enlace.'; return; }
+            var name = document.querySelector('input[name=name]');
+            var price = document.querySelector('input[name=price]');
+            var desc = document.querySelector('textarea[name=description]');
+            if (d.name && name) name.value = d.name;
+            if (d.price && price) price.value = d.price;
+            if (d.description && desc) desc.value = d.description;
+            var imp = document.getElementById('image-imported');
+            if (d.image && imp) imp.value = d.image;
+            status.textContent = 'Datos cargados. Revisa y pulsa Guardar.';
+          })
+          .catch(function(){ btn.disabled = false; status.textContent = 'Error de red. Inténtalo de nuevo.'; });
+      });
+    })();
+    </script>
   </div>
 
   <div>

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-APP=/var/www/socialairsoft
+APP=/var/www/airsoftsocial
 
 if [ ! -f "$APP/config.php" ]; then
   cp "$APP/config.example.php" "$APP/config.php"
@@ -13,15 +13,15 @@ mkdir -p "$APP/uploads/avatars" "$APP/uploads/fields" \
 chown -R www-data:www-data "$APP" 2>/dev/null || true
 
 if [ -x /usr/sbin/a2enconf ]; then
-  cat > /etc/apache2/conf-available/socialairsoft.conf <<'EOC'
-Alias /socialairsoft /var/www/socialairsoft
-<Directory /var/www/socialairsoft>
+  cat > /etc/apache2/conf-available/airsoftsocial.conf <<'EOC'
+Alias /airsoftsocial /var/www/airsoftsocial
+<Directory /var/www/airsoftsocial>
     Options -Indexes +FollowSymLinks
     AllowOverride All
     Require all granted
 </Directory>
 EOC
-  a2enconf socialairsoft >/dev/null 2>&1 || true
+  a2enconf airsoftsocial >/dev/null 2>&1 || true
   if command -v systemctl >/dev/null 2>&1; then
     systemctl try-restart apache2 >/dev/null 2>&1 || true
   else
@@ -30,7 +30,7 @@ EOC
 fi
 
 echo ""
-echo "Social Airsoft instalado en $APP"
+echo "Airsoft Social instalado en $APP"
 echo "Edita $APP/config.php con tus datos de MySQL o usa el instalador web:"
-echo "  http://localhost/socialairsoft/install.php  (Apache)"
+echo "  http://localhost/airsoftsocial/install.php  (Apache)"
 echo ""

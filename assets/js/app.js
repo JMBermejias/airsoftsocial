@@ -1,4 +1,4 @@
-/* Social Airsoft · Interacciones del cliente */
+/* Airsoft Social · Interacciones del cliente */
 
 /* ---- Visor de historias ---- */
 function openStory(data){
@@ -93,9 +93,9 @@ function pwaInstall(){
   /* Firefox no implementa beforeinstallprompt: no admite instalación de PWA en escritorio */
   if (ua.indexOf('Firefox') !== -1) {
     if (ua.indexOf('Android') !== -1) {
-      alert('Firefox móvil: pulsa el menú ⋮ → «Añadir a pantalla de inicio» para crear el icono de Social Airsoft.');
+      alert('Firefox móvil: pulsa el menú ⋮ → «Añadir a pantalla de inicio» para crear el icono de Airsoft Social.');
     } else {
-      alert('Firefox (escritorio) no permite instalar aplicaciones web.\n\nOpciones:\n1) Abre esta web con Chrome o Edge y pulsa este botón: verás «Instalar Social Airsoft».\n2) Arrastra el icono de la pestaña (o la URL) al escritorio para crear un acceso directo.');
+      alert('Firefox (escritorio) no permite instalar aplicaciones web.\n\nOpciones:\n1) Abre esta web con Chrome o Edge y pulsa este botón: verás «Instalar Airsoft Social».\n2) Arrastra el icono de la pestaña (o la URL) al escritorio para crear un acceso directo.');
     }
     return;
   }
@@ -103,5 +103,5 @@ function pwaInstall(){
     alert('iOS: toca Compartir ⬆️ → «Añadir a pantalla de inicio».');
     return;
   }
-  alert('Usa el menú del navegador → «Añadir a pantalla de inicio» o «Instalar Social Airsoft».');
+  alert('Usa el menú del navegador → «Añadir a pantalla de inicio» o «Instalar Airsoft Social».');
 }

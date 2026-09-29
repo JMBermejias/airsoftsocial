@@ -6,7 +6,7 @@
  * automáticamente. También puedes editarlo a mano.
  */
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'social_airsoft');
+define('DB_NAME', 'airsoft_social');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
@@ -14,7 +14,7 @@ define('DB_PASS', '');
 define('DB_PREFIX', '');
 
 /* Título del sitio (se muestra en el navegador) */
-define('APP_NAME', 'Social Airsoft');
+define('APP_NAME', 'Airsoft Social');
 
 /* Zona horaria por defecto */
 date_default_timezone_set('Europe/Madrid');
@@ -27,7 +27,7 @@ date_default_timezone_set('Europe/Madrid');
  *   UPDATE_CHECK_HOURS  → cada cuántas horas se comprueba (defecto 6).
  * Deja esto como está si usas las releases oficiales.
  * ------------------------------------------------------------ */
-define('GITHUB_REPO', 'JMBermejias/socialairsoft');
+define('GITHUB_REPO', 'JMBermejias/airsoftsocial');
 define('UPDATE_CHECK_HOURS', 6);
 
 /* Opcional: token de GitHub (solo lectura) para que la comprobación no se

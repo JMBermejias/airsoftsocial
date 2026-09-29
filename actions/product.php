@@ -29,6 +29,12 @@ if ($action === 'save') {
         $up = upload_file($_FILES['image'], 'products', 'image');
         if (!$up['ok']) { $_SESSION['flash'] = ['error', $up['error']]; redirect('store_admin.php'); }
         $image = $up['path'];
+    } elseif (!empty($_POST['image_imported'])) {
+        /* Imagen traída automáticamente desde el enlace de afiliado y guardada en uploads/products/. */
+        $imp = trim($_POST['image_imported']);
+        if (str_contains($imp, '..') === false && is_file(dirname(__DIR__) . '/' . $imp)) {
+            $image = $imp;
+        }
     }
 
     if ($id) {

@@ -1,5 +1,5 @@
 -- ============================================================
---  SOCIAL AIRSOFT - Esquema de base de datos (MySQL/MariaDB)
+--  AIRSOFT SOCIAL - Esquema de base de datos (MySQL/MariaDB)
 --  Importa esto desde phpMyAdmin o ejecútalo con mysql client.
 --  Codificación: utf8mb4 para soportar emojis / acentos.
 -- ============================================================

@@ -1,4 +1,4 @@
-package com.socialairsoft.app;
+package com.airsoftsocial.app;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

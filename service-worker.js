@@ -1,4 +1,4 @@
-/* Social Airsoft · Service Worker (PWA)
+/* Airsoft Social · Service Worker (PWA)
  * ----------
  * - Los archivos estáticos (css/js/imágenes/vídeos) se sirven desde caché
  *   mientras se refrescan en segundo plano (stale-while-revalidate).
@@ -8,7 +8,7 @@
  *   pasan directamente a la red.
  * Bump CACHE al hacer cambios en plantillas o assets para invalidar.
  */
-const CACHE = 'socialairsoft-v5';
+const CACHE = 'airsoftsocial-v5';
 const ASSET_RE = /\.(css|js|png|jpe?g|gif|webp|svg|ico|woff2?|pdf)$/;
 const SHELL = [
   './',
@@ -80,7 +80,7 @@ async function networkFirst(req) {
     if (cached) return cached;
     const fallback = await caches.match('./');
     if (fallback) return fallback;
-    return new Response('Sin conexión. Vuelve a conectarte para acceder a Social Airsoft.', {
+    return new Response('Sin conexión. Vuelve a conectarte para acceder a Airsoft Social.', {
       status: 503, statusText: 'Offline', headers: { 'Content-Type': 'text/plain; charset=utf-8' }
     });
   }

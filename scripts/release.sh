@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Crea un commit + tag e impulsa todo a GitHub.
 # GitHub Actions construye entonces el .deb, el APK y el AAB automáticamente
-# y los publica en https://github.com/JMBermejias/socialairsoft/releases
+# y los publica en https://github.com/JMBermejias/airsoftsocial/releases
 #
 # Uso:  ./scripts/release.sh v1.2.0 [mensaje breve]
 set -euo pipefail
@@ -28,7 +28,7 @@ git push origin "$TAG"
 
 echo ""
 echo "Release $TAG lanzada. GitHub Actions está creando:"
-echo "  - socialairsoft_${TAG#v}_all.deb"
-echo "  - socialairsoft-${TAG#v}.apk (firmado)"
-echo "  - socialairsoft-${TAG#v}.aab (firmado)"
-echo "Disponibles en: https://github.com/JMBermejias/socialairsoft/releases"
+echo "  - airsoftsocial_${TAG#v}_all.deb"
+echo "  - airsoftsocial-${TAG#v}.apk (firmado)"
+echo "  - airsoftsocial-${TAG#v}.aab (firmado)"
+echo "Disponibles en: https://github.com/JMBermejias/airsoftsocial/releases"

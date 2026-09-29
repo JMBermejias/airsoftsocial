@@ -1,6 +1,6 @@
 <?php
 /**
- * INSTALADOR DE SOCIAL AIRSOFT
+ * INSTALADOR DE AIRSOFT SOCIAL
  * --------------------------------------------
  * 1) Sube todos los archivos a tu hosting.
  * 2) Crea una base de datos MySQL en tu hosting.
@@ -71,7 +71,7 @@ if ($step === 1 && $_SERVER['REQUEST_METHOD'] === 'POST') {
             . "define('DB_USER', " . var_export($user, true) . ");\n"
             . "define('DB_PASS', " . var_export($pass, true) . ");\n"
             . "define('DB_PREFIX', '');\n"
-            . "define('APP_NAME', 'Social Airsoft');\n"
+            . "define('APP_NAME', 'Airsoft Social');\n"
             . "date_default_timezone_set('Europe/Madrid');\n";
         file_put_contents(__DIR__ . '/../config.php', $cfg);
         $_SESSION['install_done'] = true;

@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Actualización de la app';
-$page_subtitle = 'Comprueba y aplica nuevas versiones de Social Airsoft';
+$page_subtitle = 'Comprueba y aplica nuevas versiones de Airsoft Social';
 require_once __DIR__ . '/includes/functions.php';
 require_admin();
 
