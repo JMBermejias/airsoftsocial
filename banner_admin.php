@@ -32,7 +32,8 @@ require_once __DIR__ . '/includes/header.php';
 <h3 class="section-title">Vista previa</h3>
 <p class="muted" style="margin-top:-6px">
   Así se verá arriba del área de trabajo, a <strong>728 × 90 px</strong>, el ancho de la columna.
-  Se actualiza mientras escribes.
+  Se actualiza mientras escribes. El título es opcional: si lo dejas vacío y subes
+  una imagen, el banner se verá solo con la imagen.
 </p>
 <div class="ad-banner" id="banner-preview" data-image="<?= e($editing['image'] ?? '') ?>">
   <div class="ad-banner-link"><div class="ad-banner-body">
@@ -55,7 +56,7 @@ require_once __DIR__ . '/includes/header.php';
         <button type="button" class="btn btn-small btn-ghost" id="btn-fetch-url">✨ Rellenar datos del enlace</button>
         <span id="fetch-status"></span>
       </p>
-      <label>Título del anuncio *
+      <label>Título del anuncio <span class="muted">(opcional)</span>
         <input type="text" name="title" value="<?= e($editing['title'] ?? '') ?>" placeholder="Ej: Envío gratis en toda la peninsula">
       </label>
       <label>Origen del anuncio (se detecta solo)

@@ -101,11 +101,16 @@ h1,h2,h3,h4{margin:.2em 0;line-height:1.2}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:var(--text);margin-bottom:2px}
 .nav-item:hover{background:rgba(255,255,255,.06)}
 .nav-item.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#201a10;font-weight:700}
-.nav-item.nav-exit{width:100%;border:none;background:none;font-family:inherit;font-size:15px;text-align:left;cursor:pointer;color:var(--danger)}
-.nav-item.nav-exit:hover{background:rgba(201,79,61,.22);color:#fff}
-.sidebar-foot-links{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.sidebar-foot-links .exit-link{color:var(--danger);font-weight:700}
-.sidebar-foot-links .exit-link:hover{color:#fff}
+/* Inicio y salida, justo debajo del menú (arriba del panel). Dos botones
+   grandes y separados para que no se pulse sin querer el que cierra sesión. */
+.sidebar-quick{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.quick-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;
+  color:var(--text);font-size:14px;font-weight:600;
+}
+.quick-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.quick-exit{color:var(--danger)}
+.quick-exit:hover{background:rgba(201,79,61,.22);color:#fff}
 .nav-ico{width:22px;text-align:center}
 .badge{
   background:var(--accent);color:#241a08;font-size:11px;
@@ -488,7 +493,10 @@ textarea{resize:vertical}
   .sidebar{position:static!important;width:100%;height:auto}
   .left-sidebar .notif-box,.left-sidebar .sidebar-foot{display:none}
   .main-nav{flex-direction:row;flex-wrap:wrap;justify-content:center;overflow-x:auto}
-  .nav-item.nav-exit{width:auto}
+  /* En móvil el menú se pone en fila; los dos botones de arriba se ponen en
+     fila también, para que ocupen poco alto y sigan siendo alcanzables. */
+  .sidebar-quick{flex-direction:row;border-bottom:none;padding:8px 14px}
+  .quick-item{flex:1;justify-content:center;font-size:13px}
   .store-sidebar{border-left:none;border-top:1px solid var(--line)}
   .content{padding:14px}
   .auth-wrap,.form-row,.two-col{grid-template-columns:1fr}

@@ -40,7 +40,7 @@ $schemaIssues = ensure_schema();
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>
-<link rel="stylesheet" href="assets/css/style.css?v=15">
+<link rel="stylesheet" href="assets/css/style.css?v=16">
 </head>
 <body>
 <div class="layout">
@@ -99,10 +99,22 @@ $schemaIssues = ensure_schema();
         <?php if ($updateBanner): ?><span class="badge"><?= e($updateBanner['latest']) ?></span><?php endif; ?>
       </a>
       <?php endif; ?>
-      <button type="button" class="nav-item nav-exit" onclick="exitApp()">
-        <span class="nav-ico">🚪</span> Salir
-      </button>
     </nav>
+
+    <!-- Inicio y salida ARRIBA, justo debajo del menú, para no tener que bajar
+         hasta el pie del panel. Antes solo había un "Salir" suelto en el menú y
+         los dos botones buenos vivían abajo, en .sidebar-foot. -->
+    <div class="sidebar-quick">
+      <a href="feed.php" class="quick-item">
+        <span class="nav-ico">🏠</span> Volver al inicio
+      </a>
+      <!-- onclick=false para que sea un <a> de verdad (si no, al estar
+           instalada en el escritorio no se cerraría la ventana): se usa
+           exitApp(), que confirma, intenta cerrar y luego va a logout.php. -->
+      <a href="logout.php" class="quick-item quick-exit" onclick="exitApp(); return false;">
+        <span class="nav-ico">🚪</span> Salir de la aplicación
+      </a>
+    </div>
 
     <div class="notif-box">
       <div class="notif-head">
@@ -126,10 +138,6 @@ $schemaIssues = ensure_schema();
 
     <div class="sidebar-foot">
       <button class="pwa-install" onclick="pwaInstall()">⬇️ Instalar la app (icono en escritorio / móvil)</button>
-      <div class="sidebar-foot-links">
-        <a href="feed.php">Volver al inicio</a>
-        <a href="logout.php" class="exit-link" onclick="return confirmExit()">🚪 Salir de la aplicación</a>
-      </div>
     </div>
   </aside>
 

@@ -1027,9 +1027,11 @@ function ad_banner_html(?array $only = null): string {
     if (!$b) return '';
     $link = ad_banner_link($b);
     $title = trim((string)($b['title'] ?? ''));
-    if ($title === '' && !$link) return '';
-
     $img = trim((string)($b['image'] ?? ''));
+    /* Solo se oculta si no hay nada que hacer clic ni nada que enseñar. Como el
+     * enlace es obligatorio, un anuncio sin título (solo imagen) se muestra
+     * igual: aquí no se descarta por falta de título. */
+    if ($title === '' && !$link && $img === '') return '';
     $wide = false;
     if ($img !== '' && preg_match('#^(https?://|uploads/)#i', $img)) $wide = banner_image_is_wide($img);
 

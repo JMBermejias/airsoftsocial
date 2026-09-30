@@ -25,7 +25,9 @@ if ($action === 'save') {
     $active = isset($_POST['active']) ? 1 : 0;
     $sort = (int)($_POST['sort_order'] ?? 0);
 
-    if ($title === '') { $_SESSION['flash'] = ['error', 'El título del anuncio es obligatorio.']; redirect('banner_admin.php'); }
+    /* El título NO es obligatorio: hay anuncios que son solo una imagen
+     * (un logo o un banner 728x90) y el texto sobra. Si no hay título pero sí
+     * imagen, el banner se dibuja con la imagen sola. */
     if (!preg_match('#^https?://#i', $url)) {
         $_SESSION['flash'] = ['error', 'El enlace del anuncio debe ser una URL válida que empiece por http:// o https:// (así nunca abrirá una página en blanco).'];
         redirect('banner_admin.php');
