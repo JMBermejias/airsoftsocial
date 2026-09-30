@@ -35,7 +35,33 @@ function db(): PDO {
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } catch (PDOException $e) {
-            die('Error de conexión con la base de datos. Comprueba config.php o ejecuta install.php');
+            /* Mensaje legible: el error de MySQL ayuda a saber si es un host
+             * equivocado, una base de datos que no existe o credenciales. */
+            $why = $e->getMessage();
+            $hint = 'Revisa DB_HOST, DB_PORT, DB_NAME, DB_USER y DB_PASS en config.php. '
+                  . 'Si la base de datos no existe todavía, abre install.php.';
+            if (strpos($why, '1045') !== false) {
+                $hint = 'El usuario o la contraseña no son correctos (error 1045). Revisa DB_USER y DB_PASS en config.php.';
+            } elseif (strpos($why, '1044') !== false) {
+                $hint = 'Ese usuario de MySQL no tiene permiso sobre la base de datos "' . DB_NAME
+                      . '" o esta base de datos no existe (error 1044). Revisa DB_NAME en config.php y pide a tu hosting que te cree la base con ese nombre.';
+            } elseif (strpos($why, '1049') !== false || strpos($why, '2002') !== false || strpos($why, '2003') !== false) {
+                $hint = 'No se encuentra el servidor o la base de datos (revisa DB_HOST, DB_PORT y DB_NAME en config.php).';
+            } elseif (strpos($why, '2005') !== false) {
+                $hint = 'El servidor MySQL rechazó la conexión por clave (revisa DB_HOST y DB_PORT en config.php).';
+            }
+            if (PHP_SAPI !== 'cli') {
+                header('Content-Type: text/html; charset=utf-8', true, 500);
+            }
+            die('<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">'
+                . '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+                . '<title>Error de conexión · ' . e(defined('APP_NAME') ? APP_NAME : 'Airsoft Social') . '</title></head>'
+                . '<body style="font-family:system-ui,sans-serif;max-width:620px;margin:12vh auto;padding:0 20px;'
+                . 'background:#14170f;color:#e8eae2">'
+                . '<h1 style="color:#c8d64b;font-size:22px;margin:0 0 12px">Error de conexión con la base de datos</h1>'
+                . '<p style="line-height:1.6">' . e($hint) . '</p>'
+                . '<p style="color:#8a9080;font-size:13px;line-height:1.5">Detalle técnico: <code>' . e($why) . '</code></p>'
+                . '</body></html>');
         }
     }
     return $pdo;
