@@ -828,9 +828,70 @@ function ad_banner_link(?array $b): ?string {
     return $u;
 }
 
-/* Dibuja el banner de publicidad al inicio del área de trabajo ('' si no hay). */
-function ad_banner_html(): string {
-    $b = active_ad_banner();
+/* ===== Imagen del banner: saber how de apaisada es =====
+ * Un banner 728x90 y un logotipo cuadrado no se pueden enseñar igual: si se
+ * siempre se recorta al mismo lado, el banner se ve cortado y el logo se ve
+ * destrozado. Así que se mide la imagen una vez y se guarda el resultado; en
+ * cada visita solo se lee de la caché (nada de descargas).
+ * Devuelve [ancho, alto]; [0,0] si no se ha podido saber.
+ */
+function banner_image_size(string $img): array {
+    static $cache = null;
+    if ($cache === null) $cache = (array)update_state_read('banner_img_wh', []);
+    if (!is_array($cache)) $cache = [];
+    if (isset($cache[$img])) {
+        $v = explode('x', (string)$cache[$img]);
+        return [(int)$v[0], (int)$v[1]];
+    }
+    $wh = measure_image_size($img);
+    if ($wh[0] > 0 && $wh[1] > 0) {
+        $cache[$img] = $wh[0] . 'x' . $wh[1];
+        if (count($cache) > 60) $cache = array_slice($cache, -60, null, true);
+        update_state_write(['banner_img_wh' => $cache]);
+    }
+    return $wh;
+}
+
+/* Mide de verdad la imagen: archivo local con getimagesize, o descargando solo
+ * lo justo (1 MB) si es remota. Nunca lanza errores. */
+function measure_image_size(string $img): array {
+    $img = trim($img);
+    if ($img === '' || strlen($img) > 600) return [0, 0];
+
+    if (strpos($img, 'http') !== 0) {
+        /* Imagen subida por el admin: está en uploads/. */
+        $rel = ltrim(str_replace('..', '', $img), '/');
+        $path = dirname(__DIR__) . '/' . $rel;
+        if (!is_file($path)) return [0, 0];
+        $s = @getimagesize($path);
+        return ($s && (int)$s[0] > 0) ? [(int)$s[0], (int)$s[1]] : [0, 0];
+    }
+
+    $r = http_request($img, [
+        'timeout' => 8, 'max_bytes' => 1048576, 'follow' => true,
+        'user_agent' => 'AirsoftSocial/1.5 (lectura de imagen de banner)',
+        'headers' => ['Accept: image/*'],
+    ]);
+    if (empty($r['body'])) return [0, 0];
+    $s = @getimagesizefromstring($r['body']);
+    return ($s && (int)$s[0] > 0) ? [(int)$s[0], (int)$s[1]] : [0, 0];
+}
+
+/* ¿La imagen tiene forma de banner (apaisada de verdad) o es más bien un logo o
+ * una foto? El banner es 728x90, o sea 8.09:1. Solo a partir de 7.5:1 la imagen
+ * da la ventaja de ocupar los 728x90 enteros sin que se le recorte un trozo
+ * apreciable; cualquier otra cosa se enseña entera a su lado, sin recortar. */
+function banner_image_is_wide(string $img): bool {
+    [$w, $h] = banner_image_size($img);
+    return $w > 0 && $h > 0 && ($w / $h) >= 7.5;
+}
+
+/* Dibuja el banner de publicidad al inicio del área de trabajo ('' si no hay).
+ * La imagen se adapta a su proporción: si es apaisada ocupa los 728x90 enteros
+ * con el texto encima; si no, se muestra entera como miniatura a la izquierda.
+ * $only dibuja un banner concreto en vez del visible (vista previa y pruebas). */
+function ad_banner_html(?array $only = null): string {
+    $b = $only ?: active_ad_banner();
     if (!$b) return '';
     $link = ad_banner_link($b);
     $title = trim((string)($b['title'] ?? ''));
@@ -838,12 +899,19 @@ function ad_banner_html(): string {
 
     $img = trim((string)($b['image'] ?? ''));
     $tag = trim((string)($b['source'] ?? ''));
-    $h = '<aside class="ad-banner" aria-label="Publicidad">';
+    $wide = false;
+    if ($img !== '' && preg_match('#^(https?://|uploads/)#i', $img)) $wide = banner_image_is_wide($img);
+
+    $h = '<aside class="ad-banner' . ($wide ? ' ad-banner-wide' : '') . '" aria-label="Publicidad">';
     $inner = '';
     if ($img !== '' && preg_match('#^(https?://|uploads/)#i', $img)) {
         /* Sin loading="lazy": la altura del banner depende de la imagen y el
          * navegador no la cargaba (se quedaba a 0 px de alto). */
-        $inner .= '<div class="ad-banner-img"><img src="' . e($img) . '" alt="' . e($title) . '"></div>';
+        if ($wide) {
+            $inner .= '<span class="ad-banner-cover"><img src="' . e($img) . '" alt="' . e($title) . '"></span>';
+        } else {
+            $inner .= '<div class="ad-banner-img"><img src="' . e($img) . '" alt="' . e($title) . '"></div>';
+        }
     }
     $desc = trim((string)($b['description'] ?? ''));
     /* Etiqueta y llamada van en la misma fila para que quepa todo en los 90 px

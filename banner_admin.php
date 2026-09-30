@@ -13,6 +13,18 @@ if (isset($_GET['edit'])) {
 $banners = ad_banners();
 $shown = active_ad_banner();
 
+/* Se mide la imagen de los anuncios guardados que aún no se han medido (una
+ * sola vez cada una). Así el banner se enseña bien desde la primera visita,
+ * sin tener que volver a guardarlo. Con límite para no alargar la página. */
+$mids = 0;
+foreach ($banners as $b) {
+    if ($mids >= 4) break;
+    $im = trim((string)($b['image'] ?? ''));
+    if ($im === '' || !preg_match('#^(https?://|uploads/)#i', $im)) continue;
+    $mids++;
+    banner_image_size($im);
+}
+
 require_once __DIR__ . '/includes/header.php';
 ?>
 <?php if ($flash): ?><div class="alert <?= $flash[0] === 'ok' ? 'ok' : 'error' ?>"><?= e($flash[1]) ?></div><?php endif; ?>
@@ -63,9 +75,11 @@ require_once __DIR__ . '/includes/header.php';
         <div class="field-label">Imagen del banner</div>
       </div>
       <p class="muted" style="margin:-4px 0 8px">
-        Se recorta a la franja de 90 px de alto, así que la que mejor queda es una
-        imagen apaisada de <strong>728 × 90 px</strong>. Si no subes ninguna, se usa
-        la que se detecte en el enlace.
+        Sirve cualquier imagen: la app mide cómo de apaisada es y la enseña como
+        quieras. Una <strong>apaisada de 728 × 90 px</strong> se ve a pantalla
+        completa dentro del banner; un <strong>logo cuadrado</strong> o una foto
+        de producto se muestran enteros a la izquierda, sin recortarlos. Si no
+        subes ninguna, se usa la que se detecte en el enlace.
       </p>
       <label class="file-picker"><input type="file" name="image" accept="image/*"> 📷 Subir imagen</label>
       <input type="hidden" name="image_imported" id="image-imported" value="">
@@ -87,16 +101,17 @@ require_once __DIR__ . '/includes/header.php';
         });
       };
       var picked = '';   /* imagen elegida en este momento */
-      function paint(){
+      var wide = false;  /* ¿la imagen es apaisada? (la decide el navegador al cargarla) */
+
+      function draw(img, isWide){
         if (!pv) return;
         var title = (field('input[name=title]') || {}).value || '';
         var desc  = (field('textarea[name=description]') || {}).value || '';
         var src   = (field('#banner-source') || {}).value || '';
         var url   = (field('#banner-url') || {}).value || '';
-        var imp   = (field('#image-imported') || {}).value || '';
-        var img   = picked || imp || pv.getAttribute('data-image') || '';
         var html = '';
-        if (img) html += '<div class="ad-banner-img"><img src="' + esc(img) + '" alt=""></div>';
+        if (img && isWide) html += '<span class="ad-banner-cover"><img src="' + esc(img) + '" alt=""></span>';
+        else if (img)      html += '<div class="ad-banner-img"><img src="' + esc(img) + '" alt=""></div>';
         html += '<div class="ad-banner-body">'
           + '<span class="ad-banner-head">'
           + '<span class="ad-banner-tag">📢 Publicidad' + (src.trim() ? ' · ' + esc(src.trim()) : '') + '</span>'
@@ -105,7 +120,22 @@ require_once __DIR__ . '/includes/header.php';
           + (title.trim() ? '<strong class="ad-banner-title">' + esc(title.trim()) + '</strong>' : '')
           + (desc.trim() ? '<p class="ad-banner-desc">' + esc(desc.trim()) + '</p>' : '')
           + '</div>';
+        pv.className = 'ad-banner' + (isWide ? ' ad-banner-wide' : '');
         pv.innerHTML = html;
+        /* Al cargarse la imagen ya sabemos su proporción real: si es apaisada
+         * (tipo 728x90) se dibuja a pantalla completa; si no, como miniatura. */
+        var im = pv.querySelector('img');
+        if (im) im.addEventListener('load', function () {
+          var r = im.naturalWidth / im.naturalHeight;
+          if (r >= 7.5 && !isWide) draw(img, true);
+          else if (r < 7.5 && isWide) draw(img, false);
+        });
+      }
+      function paint(){
+        if (!pv) return;
+        var imp = (field('#image-imported') || {}).value || '';
+        var img = picked || imp || pv.getAttribute('data-image') || '';
+        draw(img, img ? wide : false);
       }
       if (pv) {
         ['input[name=title]', 'textarea[name=description]', '#banner-source', '#banner-url']
@@ -117,6 +147,7 @@ require_once __DIR__ . '/includes/header.php';
         if (file) file.addEventListener('change', function(){
           if (picked) { try { URL.revokeObjectURL(picked); } catch (e) {} }
           picked = (file.files && file.files[0]) ? URL.createObjectURL(file.files[0]) : '';
+          wide = false;
           paint();
         });
         paint();
@@ -146,6 +177,7 @@ require_once __DIR__ . '/includes/header.php';
             f('#banner-source', d.source);
             var imp = document.getElementById('image-imported');
             if (d.image && imp) imp.value = d.image;
+            wide = !!d.wide;
             paint();
             status.textContent = d.warning || ('Origen reconocido: ' + (d.source || 'desconocido') + '. Revisa y pulsa Guardar.');
           })

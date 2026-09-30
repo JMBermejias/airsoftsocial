@@ -10,7 +10,7 @@ Red social para la comunidad de **airsoft** pensada para alojarse en cualquier *
 |---|---|
 | **Registro / Login** | Creación de usuarios y sesión segura (contraseñas con `password_hash`). Se entra **con el nombre de usuario o con el correo electrónico**, indistintamente (no hace falta acordarse de cuál se usó). El **primer usuario** registrado puede marcarse **Administrador** (únicamente si aún no existe ningún admin). |
 | **Panel izquierdo (dashboard)** | Navegación de la red: noticias, historias, amigos, campos, tienda y perfil. Incluye campanita de notificaciones, botón **Salir de la aplicación** (🚪, cierra la sesión y la ventana si está instalada) y botón **Instalar la app** (icono en escritorio / móvil). |
-| **Banner de publicidad** | Banner de **728 × 90 px** (el tamaño estándar) fijo en la **parte alta del área de trabajo (centro)**, que mide lo mismo: 728 px de ancho. El administrador solo pega la **URL** del anuncio y la app **reconoce sola de dónde viene**: origen (YouTube, Amazon, Instagram, tu tienda…), título, descripción e imagen. Se activa, ordena o elimina desde **Gestionar anuncios**, con **vista previa en vivo** a 728 × 90. |
+| **Banner de publicidad** | Banner de **728 × 90 px** (el tamaño estándar) fijo en la **parte alta del área de trabajo (centro)**, que mide lo mismo: 728 px de ancho. La imagen **se adapta sola a su formato**: un banner apaisado (7.5:1 o más) ocupa los 728 × 90 enteros con el texto encima; un logo, una foto de producto o cualquier otra imagen se muestra **entera y sin deformar** a su lado. El administrador solo pega la **URL** del anuncio y la app **reconoce sola de dónde viene**: origen (YouTube, Amazon, Instagram, tu tienda…), título, descripción e imagen. Se activa, ordena o elimina desde **Gestionar anuncios**, con **vista previa en vivo** a 728 × 90. |
 | **Área de trabajo (centro)** | Columna central de **728 px de ancho** (justo el ancho del banner, para que todo quede alineado). Muro de noticias con publicaciones de texto, **imágenes** y **PDF**, etiquetas `#tags`, likes y comentarios. |
 | **Tienda online (panel derecho, siempre visible)** | Tienda **de afiliación** gestionada solo por el administrador. Cada producto tiene **ficha propia** (foto, precio, descripción) con las **formas de pago** que configure el admin (PayPal, Bizum, tarjeta, transferencia, efectivo) y su **enlace de afiliado**. |
 | **Noticias generales** | Si el **administrador** publica con la casilla **⭐ Noticia general**, la publicación llega a **todos los usuarios** de la red, no solo a amigos. El resto de publicaciones solo las ven el autor y sus amigos. |
@@ -171,6 +171,31 @@ entran por correo. El panel de administración lo detecta, lo avisa arriba con u
 aviso rojo y tiene un botón que les asigna un nombre automáticamente (sacado del
 correo, sin repetir ninguno). Una vez reparado, esa cuenta entra con nombre y
 con correo.
+
+---
+
+## 🖼️ La imagen del banner se adapta a su formato
+
+El banner mide 728 × 90 px, o sea 8.09 : 1. No todas las imágenes tienen esa
+forma, así que la app **mide la imagen** (una sola vez; luego lo guarda) y la
+enseña como mejor queda. **Ninguna imagen se deforma y solo se recorta si es un
+banner de verdad**:
+
+| Imagen | Proporción | Cómo se muestra |
+|---|---|---|
+| Banner 728 × 90 | 8.09 : 1 | Ocupa los **728 × 90 enteros**, con el texto encima sobre un degradado |
+| Banner 1500 × 200 | 7.5 : 1 | Igual, ocupa los 728 × 90 (recorta un 9 %, imperceptible) |
+| Banner 1200 × 300 | 4 : 1 | **Entera** a su lado, a 330 × 82, sin recortar |
+| Logo 400 × 400 | 1 : 1 | **Entero**, a 88 × 88, sin recortar |
+| Foto vertical 600 × 900 | 0.67 : 1 | **Entera**, a 59 × 88, sin recortar |
+| Sin imagen | — | El texto ocupa los 728 px |
+
+La medida se guarda en `uploads/_system/state.json`, así que en cada visita no se
+vuelve a mirar la imagen (coste: 0,00001 s). Se mide al guardar el anuncio, al
+pulsar «Rellenar datos del enlace» y al abrir el panel de anuncios.
+
+Para cambiar de un comportamiento a otro, mira el umbral `7.5` en
+`banner_image_is_wide()` (`includes/functions.php`).
 
 ---
 

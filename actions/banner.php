@@ -68,6 +68,9 @@ if ($action === 'save') {
         /* Nunca una pantalla en blanco: se explica qué ha pasado. */
         $_SESSION['flash'] = ['error', 'No se pudo guardar el anuncio (' . $ex->getMessage() . ').'];
     }
+    /* Se mide la imagen ahora (una sola vez) para saber si es apaisada y
+     * poder enseñarla bien, en vez de recortarla siempre por el mismo lado. */
+    if (!empty($image)) banner_image_size((string)$image);
     redirect('banner_admin.php');
 }
 

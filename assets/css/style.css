@@ -380,8 +380,28 @@ textarea{resize:vertical}
 }
 .ad-banner-link{display:flex;align-items:stretch;flex:1;min-width:0;padding:0;color:var(--text)}
 .ad-banner-link:hover{color:var(--text);background:rgba(255,255,255,.05)}
-.ad-banner-img{flex:0 0 160px;background:#111}
-.ad-banner-img img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Imagen que NO es un banner: se muestra ENTERTA a su altura (88 px), con su
+ * proporción natural: ni recortada ni deformada. Un logo cuadrado sale 88x88,
+ * una foto vertical 59x88, un banner 4:1 330x82... El ancho se limita a 330 px
+ * para que siempre quede sitio para el texto. */
+.ad-banner-img{
+  flex:0 1 auto;min-width:0;background:#111;display:flex;align-items:center;justify-content:center;
+}
+.ad-banner-img img{max-height:100%;max-width:330px;width:auto;height:auto;object-fit:contain;display:block}
+
+/* Imagen apaisada (tipo banner 728x90): ocupa los 728x90 enteros y el texto
+ * va encima, con un degradado para que se lea siempre. */
+.ad-banner-wide .ad-banner-link{position:relative;display:block}
+.ad-banner-cover{position:absolute;inset:0;background:#111;display:block}
+.ad-banner-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.ad-banner-wide .ad-banner-body{
+  position:relative;max-width:64%;height:100%;
+  background:linear-gradient(90deg,rgba(18,21,13,.94) 0%,rgba(18,21,13,.86) 55%,rgba(18,21,13,0) 100%);
+}
+.ad-banner-wide .ad-banner-admin{
+  position:absolute;top:0;right:0;bottom:0;background:rgba(18,21,13,.5);
+}
 .ad-banner-body{
   flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:7px 12px;
 }
@@ -409,10 +429,11 @@ textarea{resize:vertical}
 /* En pantallas estrechas el banner no puede medir 728 px: se recorta la parte
  * menos importante (descripción y llamada) y se mantiene la franja de 90 px. */
 @media (max-width:620px){
-  .ad-banner-img{flex:0 0 92px}
+  .ad-banner-img{flex:0 0 84px}
   .ad-banner-desc{display:none}
   .ad-banner-cta{display:none}
   .ad-banner-body{padding:7px 10px}
+  .ad-banner-wide .ad-banner-body{max-width:80%}
 }
 
 /* ---------- ESTADÍSTICAS ADMIN ---------- */

@@ -26,11 +26,19 @@ if ($meta['image'] !== '') {
     $image = save_remote_image($meta['image'], 'banners') ?: $meta['image'];
 }
 
+/* Se mide ahora para saber cómo mostrarla (apaisada a 728x90 o miniatura). */
+$wide = false;
+if (!empty($image)) {
+    [$iw, $ih] = banner_image_size((string)$image);
+    $wide = $iw > 0 && $ih > 0 && ($iw / $ih) >= 7.5;
+}
+
 echo json_encode([
     'ok' => true,
     'source' => $meta['source'],
     'title' => $meta['title'],
     'description' => $meta['description'],
     'image' => $image,
+    'wide' => $wide,
     'warning' => $meta['warning'],
 ]);
