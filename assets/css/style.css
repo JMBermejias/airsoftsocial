@@ -399,6 +399,11 @@ textarea{resize:vertical}
 .table th{text-align:left;color:var(--muted);text-transform:uppercase;font-size:11px;padding:8px;border-bottom:1px solid var(--line)}
 .table td{padding:8px;border-bottom:1px solid var(--line)}
 .table tr:hover td{background:rgba(255,255,255,.03)}
+.table td:first-child{color:var(--muted);width:44%}
+/* Bloque de código (diagnóstico del actualizador, config.php a copiar…) */
+.code-block{background:#0d1108;border:1px solid var(--line);border-left:3px solid var(--accent);
+  border-radius:6px;padding:10px 12px;margin:8px 0;font-family:ui-monospace,'Fira Code',Menlo,Consolas,monospace;
+  font-size:12.5px;color:var(--accent);overflow-x:auto;white-space:pre-wrap;word-break:break-all}
 
 /* ---------- MODALES ---------- */
 .modal{position:fixed;inset:0;background:rgba(10,12,8,.8);z-index:90;display:flex;align-items:center;justify-content:center;padding:16px}

@@ -49,6 +49,30 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 <?php elseif (empty($rel['ok'])): ?>
   <div class="alert error"><?= e($rel['error'] ?? 'No se pudo comprobar actualizaciones.') ?></div>
+  <?php $diag = update_diagnostics(true); ?>
+  <div class="card">
+    <h3>Diagnóstico del servidor</h3>
+    <table class="table">
+      <tr><td>Versión instalada</td><td>v<?= e($diag['instalada']) ?></td></tr>
+      <tr><td>Repositorio de las actualizaciones</td><td><?= e($diag['repo']) ?></td></tr>
+      <tr><td>Token de GitHub en config.php</td><td><?= $diag['token'] ? '✅ configurado' : '❌ no hay' ?></td></tr>
+      <tr><td>Extensión cURL</td><td><?= $diag['curl'] ? '✅ disponible' : '❌ no disponible' ?></td></tr>
+      <tr><td>allow_url_fopen</td><td><?= $diag['allow_url_fopen'] ? '✅ activado' : '⚠️ desactivado' ?></td></tr>
+      <tr><td>Conexión con GitHub</td><td><?= e($diag['conexion']) ?></td></tr>
+    </table>
+    <?php if (!$diag['token']): ?>
+      <h4>Cómo solucionarlo</h4>
+      <p class="muted">Si el repositorio de arriba es <strong>privado</strong>, GitHub no enseña sus
+        releases a esta instalación. Añade esta línea en tu <code>config.php</code>:</p>
+      <pre class="code-block">define('GITHUB_TOKEN', 'ghp_...');</pre>
+      <p class="muted">El token solo necesita permiso de <strong>lectura de contenido</strong> del repo
+        (GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens).
+        Si prefieres no usar token, deja el repositorio de las actualizaciones en <strong>público</strong>.</p>
+    <?php elseif (!$diag['curl']): ?>
+      <p class="muted">Pide a tu hosting que active la extensión <strong>cURL</strong> de PHP (o que
+        active <code>allow_url_fopen</code>). Sin ninguna de las dos la app no puede salir a Internet.</p>
+    <?php endif; ?>
+  </div>
 <?php else: ?>
   <div class="card"><p class="ok-text">✅ Estás al día: no hay versiones más nuevas que <strong>v<?= e($current) ?></strong>.</p></div>
 <?php endif; ?>
@@ -79,6 +103,13 @@ require_once __DIR__ . '/includes/header.php';
     <li>Las migraciones de base de datos se aplican solas y los navegadores recargan la app
       sin caché antigua.</li>
   </ol>
+  <h4>Si algún día falla la comprobación</h4>
+  <p class="muted">La app necesita poder salir a Internet por HTTPS (usa <code>cURL</code> y, si no
+    lo tiene, los flujos de PHP). Con el repositorio
+    <a href="https://github.com/<?= e(update_github_repo()) ?>" target="_blank" rel="noopener"><?= e(update_github_repo()) ?></a>
+    en <strong>público</strong> no hace falta token. Si algún día lo haces privado, añade
+    <code>define('GITHUB_TOKEN', 'ghp_...');</code> en <code>config.php</code> con un token
+    fine-grained de solo lectura. La propia pantalla te dice qué falta, con un diagnóstico completo.</p>
 </div>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

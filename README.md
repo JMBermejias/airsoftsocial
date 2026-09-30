@@ -83,8 +83,13 @@ Opciones de configuración (en `config.php`):
 ```php
 define('GITHUB_REPO', 'JMBermejias/airsoftsocial'); // repo de las actualizaciones
 define('UPDATE_CHECK_HOURS', 6);                    // cada cuántas horas comprobar
-define('GITHUB_TOKEN', '');                         // opcional: evita límites de la API
+define('GITHUB_TOKEN', '');                         // opcional: solo si el repo es privado
 ```
+
+**Si la comprobación falla**, la propia pantalla de actualizaciones te dice exactamente por qué
+(`curl` desactivado, `allow_url_fopen` desactivado, repositorio privado sin token, límite de la API…)
+con un diagnóstico completo, en lugar de un error genérico. La app necesita poder salir a Internet
+por HTTPS: usa la extensión **cURL** y, si no la tiene, cae a los flujos de PHP.
 
 ## 📱 App instalable (PWA) — escritorio y móvil
 

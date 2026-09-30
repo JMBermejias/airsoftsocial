@@ -286,29 +286,188 @@ function product_buy_url(array $p): ?string {
     return $u;
 }
 
+/* ---------- Peticiones HTTP salientes ----------
+ * En hosting compartido es muy habitual que allow_url_fopen esté DESACTIVADO
+ * (entonces file_get_contents con una URL no funciona) o que falte la extensión
+ * cURL. Este helper intenta cURL y, si no existe, usa los flujos de PHP.
+ * Nunca lanza errores: siempre devuelve el estado, el cuerpo y el motivo del
+ * fallo, para poder explicárselo al administrador con palabras claras.
+ *
+ * Opciones: method, headers[], timeout, follow, user_agent, to_file, max_bytes.
+ * Devuelve: code, body, headers[] (minúsculas), error, warning, via. */
+function http_request(string $url, array $opt = []): array {
+    $out = ['code' => 0, 'body' => '', 'headers' => [], 'error' => '', 'warning' => '', 'via' => ''];
+    $method  = (string)($opt['method'] ?? 'GET');
+    $timeout = max(3, (int)($opt['timeout'] ?? 20));
+    $follow  = !array_key_exists('follow', $opt) || (bool)$opt['follow'];
+    $ua      = (string)($opt['user_agent'] ?? 'AirsoftSocial');
+    $toFile  = (string)($opt['to_file'] ?? '');
+    $max     = (int)($opt['max_bytes'] ?? 0);
+    $headers = array_values((array)($opt['headers'] ?? []));
+
+    if (!preg_match('#^https?://#i', $url)) {
+        $out['error'] = 'URL no válida: ' . $url;
+        return $out;
+    }
+
+    /* 1) cURL: funciona aunque allow_url_fopen esté desactivado. */
+    if (function_exists('curl_init')) {
+        $out['via'] = 'curl';
+        $attempt = function (bool $verify) use ($url, $method, $timeout, $follow, $ua, $toFile, $headers) {
+            $hdr = [];
+            $fh  = null;
+            if ($toFile !== '' && ($fh = @fopen($toFile, 'wb')) === false) {
+                return ['res' => false, 'err' => 'No se pudo escribir en ' . $toFile, 'code' => 0, 'hdr' => [], 'size' => 0];
+            }
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => $fh === null,
+                CURLOPT_FOLLOWLOCATION => $follow,
+                CURLOPT_MAXREDIRS       => 5,
+                CURLOPT_CONNECTTIMEOUT  => min(10, $timeout),
+                CURLOPT_TIMEOUT         => $timeout,
+                CURLOPT_SSL_VERIFYPEER  => $verify,
+                CURLOPT_SSL_VERIFYHOST  => $verify ? 2 : 0,
+                CURLOPT_USERAGENT       => $ua,
+                CURLOPT_HTTPHEADER      => $headers,
+                CURLOPT_HEADERFUNCTION  => function ($c, $line) use (&$hdr) {
+                    $p = strpos($line, ':');
+                    if ($p !== false) $hdr[strtolower(trim(substr($line, 0, $p)))][] = trim(substr($line, $p + 1));
+                    return strlen($line);
+                },
+            ]);
+            if ($fh !== null) curl_setopt($ch, CURLOPT_FILE, $fh);
+            $res  = curl_exec($ch);
+            $err  = (string)curl_error($ch);
+            $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if (PHP_VERSION_ID < 80000) curl_close($ch);
+            if ($fh !== null) fclose($fh);
+            return ['res' => $res, 'err' => $err, 'code' => $code, 'hdr' => $hdr, 'size' => strlen((string)$res)];
+        };
+
+        $r = $attempt(true);
+        /* CA antigua en el hosting: si el certificado no valida, se reintenta
+         * sin verificación (solo se habla con GitHub) y se avisa en la web. */
+        if ($r['err'] !== '' && preg_match('/certificate|ssl|ca cert|issuer/i', $r['err'])) {
+            $r2 = $attempt(false);
+            if ($r2['err'] === '') {
+                $r = $r2;
+                $out['warning'] = 'Tu hosting no tiene los certificados de una CA actual: se aceptó la conexión con GitHub sin verificarlos.';
+            }
+        }
+
+        $out['code']    = (int)$r['code'];
+        $out['headers'] = $r['hdr'];
+        $out['body']    = is_string($r['res']) ? $r['res'] : '';
+        if ($r['err'] !== '') {
+            $out['error'] = 'cURL: ' . $r['err'];
+            return $out;
+        }
+        if ($toFile !== '') {
+            $size = is_file($toFile) ? (int)filesize($toFile) : 0;
+            if ($max > 0 && $size > $max) {
+                @unlink($toFile);
+                $out['error'] = 'El paquete descargado supera el tamaño máximo permitido (' . (int)round($max / 1048576) . ' MB).';
+                return $out;
+            }
+            if ($size === 0) {
+                @unlink($toFile);
+                $out['error'] = 'GitHub devolvió el paquete vacío (código HTTP ' . $out['code'] . ').';
+                return $out;
+            }
+        }
+        if ($out['code'] >= 400) {
+            $out['error'] = 'GitHub respondió con el código HTTP ' . $out['code'] . '.';
+        }
+        return $out;
+    }
+
+    /* 2) Flujos de PHP (solo si allow_url_fopen está activado). */
+    $out['via'] = 'streams';
+    if (!filter_var((string)ini_get('allow_url_fopen'), FILTER_VALIDATE_BOOLEAN)) {
+        $out['error'] = 'Este PHP no tiene la extensión cURL y tiene allow_url_fopen desactivado, así que la app no puede salir a Internet. Pide a tu hosting que active cURL.';
+        return $out;
+    }
+    $raw = "User-Agent: $ua\r\nAccept-Encoding: identity\r\n";
+    foreach ($headers as $h) $raw .= $h . "\r\n";
+    $ctx = stream_context_create(['http' => [
+        'method'        => $method,
+        'timeout'       => $timeout,
+        'header'        => $raw,
+        'ignore_errors' => true,
+        'follow_location' => $follow ? 1 : 0,
+        'max_redirects' => 5,
+    ]]);
+    /* Se lee con fopen (no con file_get_contents) para poder sacar las
+     * cabeceras de la respuesta sin usar la variable obsoleta
+     * $http_response_header y para volcar el paquete directamente a disco. */
+    $fp = @fopen($url, 'rb', false, $ctx);
+    if ($fp === false) {
+        $out['error'] = 'No se pudo abrir ' . $url . ' (revisa la salida a Internet del hosting y su certificado SSL).';
+        return $out;
+    }
+    $meta = @stream_get_meta_data($fp);
+    $rh   = isset($meta['wrapper_data']) && is_array($meta['wrapper_data']) ? $meta['wrapper_data'] : [];
+    $code = 0;
+    $h    = [];
+    foreach ($rh as $line) {
+        if (!is_string($line)) continue;
+        if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $m)) { $code = (int)$m[1]; $h = []; continue; }
+        $p = strpos($line, ':');
+        if ($p !== false) $h[strtolower(trim(substr($line, 0, $p)))][] = trim(substr($line, $p + 1));
+    }
+    $out['code']    = $code;
+    $out['headers'] = $h;
+
+    $fh   = $toFile !== '' ? @fopen($toFile, 'wb') : null;
+    $body = '';
+    $size = 0;
+    while (!feof($fp)) {
+        $chunk = fread($fp, 65536);
+        if ($chunk === false || $chunk === '') break;
+        $size += strlen($chunk);
+        if ($max > 0 && $size > $max) {
+            fclose($fp);
+            if ($fh !== null) fclose($fh);
+            @unlink($toFile);
+            $out['error'] = 'El paquete descargado supera el tamaño máximo permitido (' . (int)round($max / 1048576) . ' MB).';
+            return $out;
+        }
+        if ($fh !== null) fwrite($fh, $chunk);
+        else $body .= $chunk;
+    }
+    fclose($fp);
+    if ($fh !== null) {
+        fclose($fh);
+        if (!is_file($toFile) || filesize($toFile) === 0) {
+            @unlink($toFile);
+            $out['error'] = 'GitHub devolvió el paquete vacío (código HTTP ' . $out['code'] . ').';
+            return $out;
+        }
+    } else {
+        $out['body'] = $body;
+    }
+    if ($out['code'] >= 400) {
+        @unlink($toFile);
+        $out['error'] = 'GitHub respondió con el código HTTP ' . $out['code'] . '.';
+    }
+    return $out;
+}
+
 /* Abre una URL imitando un navegador real (UA, Accept-Language, Referer).
- * Devuelve [código HTTP, contenido HTML] o [0/null]. */
+ * Devuelve [código HTTP, contenido HTML] o [0/'']. */
 function http_get_like_browser(string $url): array {
     $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS => 5,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_TIMEOUT => 25,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_USERAGENT => $ua,
-        CURLOPT_HTTPHEADER => [
+    $r = http_request($url, [
+        'user_agent' => $ua,
+        'timeout'    => 25,
+        'headers'    => [
             'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language: es-ES,es;q=0.9,en;q=0.8',
             'Referer: https://www.amazon.es/',
         ],
     ]);
-    $html = curl_exec($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    if (PHP_VERSION_ID < 80000) curl_close($ch);
-    return [$code, $html === false ? '' : (string)$html];
+    return [$r['code'], $r['body']];
 }
 
 /* Extrae título, precio, imagen y descripción reales de un enlace de tienda
@@ -743,47 +902,82 @@ function update_log(string $tag, string $event, string $detail = ''): void {
     @file_put_contents($f, json_encode($log, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 }
 
-/* Última release sin gastar la API de GitHub (la API limita a 60/h por IP,
- * algo habitual en hosting compartido): /releases/latest responde con un
- * redirect a /releases/tag/vX.Y.Z y ese redirect nos da la versión. */
-function gh_latest_tag(): ?string {
-    $ctx = stream_context_create(['http' => [
-        'method' => 'GET',
-        'timeout' => 10,
-        'header' => "User-Agent: AirsoftSocial-Update\r\n",
-        'ignore_errors' => true,
-        'follow_location' => 0,
-        'max_redirects' => 0,
-    ]]);
-    $headers = @get_headers('https://github.com/' . update_github_repo() . '/releases/latest', 1, $ctx);
-    if (!is_array($headers)) return null;
-    foreach ($headers as $k => $v) {
-        if (strcasecmp((string)$k, 'Location') !== 0) continue;
-        foreach (is_array($v) ? $v : [$v] as $loc) {
-            if (preg_match('#/releases/tag/(v\d+\.\d+\.\d+)#', (string)$loc, $m)) return $m[1];
-        }
-    }
-    return null;
+/* Token de GitHub opcional (config.php o variable de entorno). Necesario si
+ * el repositorio de las actualizaciones es privado: sin token, GitHub responde
+ * 404 a cualquier installation que no sea la del dueño. */
+function gh_token(): string {
+    if (defined('GITHUB_TOKEN') && trim((string)GITHUB_TOKEN) !== '') return trim((string)GITHUB_TOKEN);
+    if (!empty($_ENV['GITHUB_TOKEN'])) return trim((string)$_ENV['GITHUB_TOKEN']);
+    return '';
 }
 
-/* Última release vía API de GitHub. Usa GITHUB_TOKEN (opcional en config.php)
- * para evitar el límite de 60 peticiones/h por IP en hosting compartido. */
-function gh_api_latest(): ?array {
-    $h = "User-Agent: AirsoftSocial-Update\r\nAccept: application/vnd.github+json\r\n";
-    if (defined('GITHUB_TOKEN') && GITHUB_TOKEN !== '') {
-        $h .= 'Authorization: Bearer ' . GITHUB_TOKEN . "\r\n";
+/* Explica por qué GitHub no devolvió la release (para mostrarlo al admin). */
+function gh_private_repo_hint(int $code = 0): string {
+    $repo = update_github_repo();
+    if (gh_token() === '') {
+        return 'El repositorio ' . $repo . ' es privado y esta instalación no tiene token, así que GitHub no enseña las releases (código ' . $code . '). '
+             . 'Solución: añade GITHUB_TOKEN en config.php (token de solo lectura) o deja el repositorio en público.';
     }
-    $ctx = stream_context_create(['http' => ['method' => 'GET', 'timeout' => 12, 'header' => $h, 'ignore_errors' => true]]);
-    $raw = @file_get_contents('https://api.github.com/repos/' . update_github_repo() . '/releases/latest', false, $ctx);
-    if ($raw === false) return null;
-    $d = json_decode($raw, true);
-    if (!is_array($d) || !isset($d['tag_name'])) return null;
-    return [
-        'tag' => (string)$d['tag_name'],
-        'name' => (string)($d['name'] ?? $d['tag_name']),
-        'body' => (string)($d['body'] ?? ''),
-        'published_at' => (string)($d['published_at'] ?? ''),
-    ];
+    return 'El token de GitHub de config.php no tiene acceso al repositorio ' . $repo . ' (código ' . $code . '). Revisa que el token no haya caducado.';
+}
+
+/* Última release sin gastar la API de GitHub (la API limita a 60/h por IP,
+ * algo habitual en hosting compartido): /releases/latest responde con un
+ * redirect a /releases/tag/vX.Y.Z y ese redirect nos da la versión.
+ * Devuelve ['tag' => 'v1.2.3'|'' , 'error' => ''|motivo]. */
+function gh_latest_tag(): array {
+    $h = [];
+    if (gh_token() !== '') $h[] = 'Authorization: Bearer ' . gh_token();
+    $r = http_request('https://github.com/' . update_github_repo() . '/releases/latest', [
+        'headers'     => $h,
+        'follow'      => false,   /* solo queremos ver la cabecera Location */
+        'timeout'     => 12,
+        'user_agent'  => 'AirsoftSocial-Update',
+    ]);
+    if ($r['code'] === 404) return ['tag' => '', 'error' => gh_private_repo_hint(404)];
+    if ($r['code'] === 403 || $r['code'] === 429) {
+        return ['tag' => '', 'error' => 'GitHub ha limitado las peticiones desde tu servidor (60/h por IP). Añade GITHUB_TOKEN en config.php o espera unos minutos.'];
+    }
+    if ($r['error'] !== '' && $r['code'] === 0) return ['tag' => '', 'error' => $r['error']];
+    foreach ((array)($r['headers']['location'] ?? []) as $loc) {
+        if (preg_match('#/releases/tag/(v\d+\.\d+\.\d+)#', (string)$loc, $m)) {
+            return ['tag' => $m[1], 'error' => ''];
+        }
+    }
+    return ['tag' => '', 'error' => 'GitHub no devolvió la última release (código HTTP ' . $r['code'] . ').'];
+}
+
+/* Última release vía API de GitHub (trae nombre y notas de la versión).
+ * Devuelve ['ok','error','tag','name','body','published_at','code','warning']. */
+function gh_api_latest(): array {
+    $out = ['ok' => false, 'error' => '', 'tag' => '', 'name' => '', 'body' => '', 'published_at' => '', 'code' => 0, 'warning' => ''];
+    $h = ['Accept: application/vnd.github+json', 'X-GitHub-Api-Version: 2022-11-28'];
+    if (gh_token() !== '') $h[] = 'Authorization: Bearer ' . gh_token();
+    $r = http_request('https://api.github.com/repos/' . update_github_repo() . '/releases/latest', [
+        'headers'     => $h,
+        'timeout'     => 12,
+        'user_agent'  => 'AirsoftSocial-Update',
+    ]);
+    $out['code']    = $r['code'];
+    $out['warning'] = $r['warning'];
+    if ($r['code'] === 404)  { $out['error'] = gh_private_repo_hint(404); return $out; }
+    if ($r['code'] === 401)  { $out['error'] = 'El token de GitHub de config.php no es válido.'; return $out; }
+    if ($r['code'] === 403 || $r['code'] === 429) {
+        $out['error'] = 'GitHub ha limitado las peticiones desde tu servidor (60/h por IP). Añade GITHUB_TOKEN en config.php o espera unos minutos.';
+        return $out;
+    }
+    if ($r['error'] !== '')  { $out['error'] = $r['error']; return $out; }
+    $d = json_decode($r['body'], true);
+    if (!is_array($d) || empty($d['tag_name'])) {
+        $out['error'] = 'GitHub devolvió una respuesta que no se entiende (código HTTP ' . $r['code'] . ').';
+        return $out;
+    }
+    $out['ok']           = true;
+    $out['tag']          = (string)$d['tag_name'];
+    $out['name']         = (string)($d['name'] ?? $d['tag_name']);
+    $out['body']         = (string)($d['body'] ?? '');
+    $out['published_at'] = (string)($d['published_at'] ?? '');
+    return $out;
 }
 
 /* Última release publicada en GitHub (cacheada N horas). Nunca lanza errores. */
@@ -792,18 +986,82 @@ function latest_release(bool $force = false): array {
     if (!$force && is_array($cache) && time() - (int)update_state_read('checked_at', 0) < update_check_hours() * 3600) {
         return $cache;
     }
-    $result = gh_api_latest();
-    if (!$result) {
-        $tag = gh_latest_tag();
-        if ($tag) $result = ['tag' => $tag, 'name' => $tag, 'body' => '', 'published_at' => ''];
-    }
-    if (!$result) {
-        $result = ['ok' => false, 'error' => 'No se pudo contactar con GitHub.'];
+    $api = gh_api_latest();
+    if (!empty($api['ok']) && preg_match('/^v?\d+\.\d+\.\d+$/', (string)$api['tag'])) {
+        $result = [
+            'ok'           => true,
+            'tag'          => (string)$api['tag'],
+            'name'         => (string)$api['name'],
+            'body'         => (string)$api['body'],
+            'published_at' => (string)$api['published_at'],
+        ];
+        if (!empty($api['warning'])) $result['warning'] = $api['warning'];
     } else {
-        $result['ok'] = true;
+        /* Plan B: el redirect de /releases/latest no gasta cuota de la API. */
+        $alt = gh_latest_tag();
+        if ($alt['tag'] !== '') {
+            $result = ['ok' => true, 'tag' => $alt['tag'], 'name' => $alt['tag'], 'body' => '', 'published_at' => ''];
+        } else {
+            $result = ['ok' => false, 'error' => (string)$api['error'] !== '' ? $api['error'] : $alt['error']];
+        }
     }
     update_state_write(['release' => $result, 'checked_at' => time()]);
     return $result;
+}
+
+/* Descarga un archivo de GitHub (codeload) a disco, con token si hace falta.
+ * Devuelve ['ok' => bool, 'error' => ...] (el archivo queda solo si ok). */
+function gh_download(string $url, string $file, int $maxBytes = 209715200): array {
+    $h = [];
+    if (gh_token() !== '') $h[] = 'Authorization: Bearer ' . gh_token();
+    $r = http_request($url, [
+        'headers'     => $h,
+        'to_file'     => $file,
+        'max_bytes'   => $maxBytes,
+        'timeout'     => 120,
+        'user_agent'  => 'AirsoftSocial-Update',
+    ]);
+    if ($r['error'] !== '' || $r['code'] >= 400) {
+        @unlink($file);
+        $err = $r['error'] !== '' ? $r['error'] : 'GitHub respondió con el código HTTP ' . $r['code'] . '.';
+        return ['ok' => false, 'error' => $err, 'warning' => $r['warning']];
+    }
+    return ['ok' => true, 'error' => '', 'warning' => $r['warning']];
+}
+
+/* Diagnóstico del servidor para la pantalla de actualizaciones: qué falta
+ * para poder hablar con GitHub. Con $live=true hace una prueba real. */
+function update_diagnostics(bool $live = false): array {
+    $d = [
+        'php'              => PHP_VERSION,
+        'curl'             => function_exists('curl_init'),
+        'allow_url_fopen'  => (bool)ini_get('allow_url_fopen'),
+        'openssl'          => extension_loaded('openssl'),
+        'repo'             => update_github_repo(),
+        'token'            => gh_token() !== '',
+        'instalada'        => app_version(),
+        'conexion'         => '',
+    ];
+    if (!$live) return $d;
+    $h = [];
+    if (gh_token() !== '') $h[] = 'Authorization: Bearer ' . gh_token();
+    $r = http_request('https://api.github.com/repos/' . update_github_repo(), [
+        'headers'    => $h,
+        'timeout'    => 12,
+        'user_agent' => 'AirsoftSocial-Update',
+    ]);
+    if ($r['code'] === 200) {
+        $d['conexion'] = '✅ GitHub responde y esta instalación puede leer ' . update_github_repo() . ' (vía ' . $r['via'] . ')';
+    } elseif ($r['code'] === 404) {
+        $d['conexion'] = '❌ ' . gh_private_repo_hint(404) . ' (vía ' . $r['via'] . ')';
+    } elseif ($r['code'] === 403 || $r['code'] === 429) {
+        $d['conexion'] = '❌ GitHub ha limitado las peticiones desde tu servidor (60/h por IP) (vía ' . $r['via'] . ')';
+    } elseif ($r['error'] !== '') {
+        $d['conexion'] = '❌ ' . $r['error'] . ' (vía ' . $r['via'] . ')';
+    } else {
+        $d['conexion'] = '❌ GitHub respondió con el código HTTP ' . $r['code'] . ' (vía ' . $r['via'] . ')';
+    }
+    return $d;
 }
 
 /* Devuelve los datos de una actualización disponible (o null si no hay). */

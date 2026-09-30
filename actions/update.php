@@ -49,17 +49,15 @@ if (version_compare($target, $cur, '<=')) {
 /* 1) Descargar el paquete desde GitHub (el mismo de la release) */
 $tgz = $work . '/release-' . $rel['tag'] . '.tar.gz';
 $url = 'https://codeload.github.com/' . update_github_repo() . '/tar.gz/refs/tags/' . $rel['tag'];
-$ctx = stream_context_create(['http' => [
-    'method' => 'GET',
-    'timeout' => 90,
-    'header' => "User-Agent: AirsoftSocial-Update\r\n",
-    'ignore_errors' => true,
-]]);
-$dl = @file_put_contents($tgz, @file_get_contents($url, false, $ctx));
-if ($dl === false || @filesize($tgz) > 200 * 1048576) {
-    @unlink($tgz);
-    $fail('No se pudo descargar el paquete desde GitHub. Revisa que tu hosting permita salida HTTPS.');
+$dl = gh_download($url, $tgz, 200 * 1048576);
+if (empty($dl['ok'])) {
+    $msg = 'No se pudo descargar el paquete desde GitHub: ' . $dl['error'];
+    if (gh_token() === '') {
+        $msg .= ' Si el repositorio es privado, añade GITHUB_TOKEN en config.php.';
+    }
+    $fail($msg);
 }
+$dl_warning = (string)($dl['warning'] ?? '');
 
 /* 2) Extraer */
 $extract = $work . '/extract';
@@ -152,5 +150,6 @@ try {
 @unlink($tgz);
 update_state_write(['notified_' . $target => true]);
 
-$_SESSION['flash'] = ['ok', 'Actualización a v' . $target . ' aplicada correctamente.'];
+$_SESSION['flash'] = ['ok', 'Actualización a v' . $target . ' aplicada correctamente.'
+    . ($dl_warning !== '' ? ' Aviso: ' . $dl_warning : '')];
 redirect('updates.php');

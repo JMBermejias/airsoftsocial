@@ -30,11 +30,15 @@ date_default_timezone_set('Europe/Madrid');
 define('GITHUB_REPO', 'JMBermejias/airsoftsocial');
 define('UPDATE_CHECK_HOURS', 6);
 
-/* Opcional: token de GitHub (solo lectura) para que la comprobación no se
- * vea afectada por el límite de la API (60 peticiones/h por IP) en hostings
- * compartidos. Se puede dejar vacío: funcionará igual en la mayoría de casos.
- * NUNCA pongas aquí el token de tu cuenta si estás en un equipo: usa uno
- * "fine-grained" con permiso solo de lectura de contenido de este repo. */
+/* Opcional: token de GitHub (solo lectura). Hace falta en dos casos:
+ *   1) Si el repositorio de las actualizaciones es PRIVADO. Sin token, GitHub
+ *      responde 404 a cualquier otra instalación y la app no puede ver las
+ *      versiones nuevas ni descargar los paquetes.
+ *   2) Para no sufrir el límite de la API (60 peticiones/h por IP) en
+ *      hostings compartidos.
+ * Se puede dejar vacío si el repositorio es público. NUNCA pongas aquí el
+ * token de tu cuenta personal si estás en un equipo: usa uno "fine-grained"
+ * con permiso solo de lectura de contenido de este repo. */
 define('GITHUB_TOKEN', '');
 
 /* ------------------------------------------------------------
