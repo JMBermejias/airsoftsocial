@@ -22,10 +22,12 @@
   --shadow:0 2px 10px rgba(0,0,0,.35);
   --left-w:250px;
   --right-w:290px;
-  /* Ancho del área de trabajo y de los banners de publicidad.
-   * 728 px es el ancho estándar de un banner (728x90), así que el anuncio
-   * ocupa la columna justa y no queda ni un hueco ni un sobrante. */
-  --work-w:728px;
+  /* Ancho del área de trabajo (820 px) y del banner de publicidad (728 px).
+   * Son cosas distintas: el área se ha ampliado para que quepan bien las
+   * tablas y las tarjetas, pero el banner sigue siendo 728x90, el tamaño
+   * estándar de la publicidad, y va centrado en esa columna. */
+  --work-w:820px;
+  --banner-w:728px;
   --banner-h:90px;
 }
 *{box-sizing:border-box}
@@ -52,7 +54,7 @@ h1,h2,h3,h4{margin:.2em 0;line-height:1.2}
 .content{
   flex:1;
   min-width:0;
-  /* 728 px de contenido + 20 px de margen a cada lado. */
+  /* Ancho del contenido + 20 px de margen a cada lado (820 + 40 = 860). */
   max-width:calc(var(--work-w) + 40px);
   margin:0 auto;
   padding:20px;
@@ -374,7 +376,7 @@ textarea{resize:vertical}
  * trabajo se estreche (móvil). */
 .ad-banner{
   position:relative;display:flex;align-items:stretch;
-  width:100%;max-width:var(--work-w);height:var(--banner-h);margin:0 auto 16px;
+  width:100%;max-width:var(--banner-w);height:var(--banner-h);margin:0 auto 16px;
   background:var(--panel);border:1px solid var(--accent);border-radius:var(--radius);
   box-shadow:var(--shadow);overflow:hidden;
 }

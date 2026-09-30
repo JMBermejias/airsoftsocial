@@ -84,6 +84,15 @@ require_once __DIR__ . '/includes/header.php';
       <label class="file-picker"><input type="file" name="image" accept="image/*"> 📷 Subir imagen</label>
       <input type="hidden" name="image_imported" id="image-imported" value="">
       <?php if (!empty($editing['image'])): ?><img class="thumb" src="<?= e($editing['image']) ?>" alt=""><?php endif; ?>
+      <label>URL de la imagen (solo si no se ha importado sola)
+        <input type="url" name="image_url" id="image-url" placeholder="https://.../728x90.jpg" value="" autocomplete="off">
+      </label>
+      <p class="muted" style="margin:-4px 0 8px">
+        Algunas webs no dejan descargar sus imágenes. Si al rellenar el enlace te
+        avisa de eso, abre el anuncio, haz clic derecho sobre la imagen y pega aquí
+        su dirección: la app la descargará al guardar. Si solo hay un icono
+        pequeño, sube tú una imagen de 728 × 90 con «📷 Subir imagen».
+      </p>
       <label class="tool"><input type="checkbox" name="active" value="1" <?= !isset($editing) || $editing['active'] ? 'checked' : '' ?>> Anuncio visible</label>
       <div class="form-actions">
         <button class="btn btn-primary" type="submit"><?= $editing ? 'Guardar cambios' : 'Añadir anuncio' ?></button>
@@ -134,11 +143,12 @@ require_once __DIR__ . '/includes/header.php';
       function paint(){
         if (!pv) return;
         var imp = (field('#image-imported') || {}).value || '';
-        var img = picked || imp || pv.getAttribute('data-image') || '';
+        var man = ((field('#image-url') || {}).value || '').trim();
+        var img = picked || man || imp || pv.getAttribute('data-image') || '';
         draw(img, img ? wide : false);
       }
       if (pv) {
-        ['input[name=title]', 'textarea[name=description]', '#banner-source', '#banner-url']
+        ['input[name=title]', 'textarea[name=description]', '#banner-source', '#banner-url', '#image-url']
           .forEach(function(sel){
             var el = field(sel);
             if (el) el.addEventListener('input', paint);

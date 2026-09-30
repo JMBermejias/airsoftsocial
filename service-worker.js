@@ -8,7 +8,7 @@
  *   pasan directamente a la red.
  * Bump CACHE al hacer cambios en plantillas o assets para invalidar.
  */
-const CACHE = 'airsoftsocial-v13';
+const CACHE = 'airsoftsocial-v14';
 const ASSET_RE = /\.(css|js|png|jpe?g|gif|webp|svg|ico|woff2?|pdf)$/;
 const SHELL = [
   './',
@@ -85,4 +85,4 @@ async function networkFirst(req) {
     });
   }
 }
-/* rev=1790157178 */
+/* rev=1790160000 */
