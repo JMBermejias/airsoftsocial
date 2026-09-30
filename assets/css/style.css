@@ -22,6 +22,11 @@
   --shadow:0 2px 10px rgba(0,0,0,.35);
   --left-w:250px;
   --right-w:290px;
+  /* Ancho del área de trabajo y de los banners de publicidad.
+   * 728 px es el ancho estándar de un banner (728x90), así que el anuncio
+   * ocupa la columna justa y no queda ni un hueco ni un sobrante. */
+  --work-w:728px;
+  --banner-h:90px;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -47,7 +52,8 @@ h1,h2,h3,h4{margin:.2em 0;line-height:1.2}
 .content{
   flex:1;
   min-width:0;
-  max-width:880px;
+  /* 728 px de contenido + 20 px de margen a cada lado. */
+  max-width:calc(var(--work-w) + 40px);
   margin:0 auto;
   padding:20px;
 }
@@ -200,7 +206,9 @@ textarea{resize:vertical}
 .tool{display:inline-flex;align-items:center;gap:6px;background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:13px;color:var(--muted);margin:0}
 .tool:hover{border-color:var(--accent);color:#fff}
 .tool input{margin:0;width:auto}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+/* El área de trabajo mide 728 px: dos columnas quedarían demasiado estrechas,
+ * así que los formularios de administración (anuncios y tienda) van apilados. */
+.two-col{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
 
 /* ---------- HISTORIAS ---------- */
 .stories-bar{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px}
@@ -360,34 +368,51 @@ textarea{resize:vertical}
 .row-actions{display:flex;gap:6px;align-items:center;margin-left:auto}
 .admin-row{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
 
-/* ---------- BANNER DE PUBLICIDAD (parte alta del área de trabajo) ---------- */
+/* ---------- BANNER DE PUBLICIDAD (728x90, parte alta del área de trabajo) ----------
+ * Tamaño fijo 728x90, el estándar de banner. La columna del banner es un
+ * <aside> independiente, así que se centra con margin:auto aunque el área de
+ * trabajo se estreche (móvil). */
 .ad-banner{
-  position:relative;display:flex;align-items:stretch;margin-bottom:16px;
+  position:relative;display:flex;align-items:stretch;
+  width:100%;max-width:var(--work-w);height:var(--banner-h);margin:0 auto 16px;
   background:var(--panel);border:1px solid var(--accent);border-radius:var(--radius);
   box-shadow:var(--shadow);overflow:hidden;
 }
-.ad-banner-link{display:flex;align-items:stretch;gap:14px;flex:1;min-width:0;padding:0;color:var(--text)}
-.ad-banner-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
-.ad-banner-img{flex:0 0 200px;background:#111}
-.ad-banner-img img{width:100%;height:100%;max-height:170px;object-fit:cover;display:block}
-.ad-banner-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding:12px 14px}
-.ad-banner-tag{
-  align-self:flex-start;background:linear-gradient(180deg,var(--accent),var(--accent-2));
-  color:#241a08;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
-  border-radius:6px;padding:2px 8px;
+.ad-banner-link{display:flex;align-items:stretch;flex:1;min-width:0;padding:0;color:var(--text)}
+.ad-banner-link:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.ad-banner-img{flex:0 0 160px;background:#111}
+.ad-banner-img img{width:100%;height:100%;object-fit:cover;display:block}
+.ad-banner-body{
+  flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:7px 12px;
 }
-.ad-banner-title{color:#fff;font-size:17px;line-height:1.25}
-.ad-banner-desc{color:var(--muted);font-size:13px;margin:0;overflow-wrap:break-word}
-.ad-banner-cta{color:var(--lime);font-size:13px;font-weight:700;margin-top:auto}
+.ad-banner-head{display:flex;align-items:center;gap:10px;justify-content:space-between;min-width:0}
+.ad-banner-tag{
+  background:linear-gradient(180deg,var(--accent),var(--accent-2));
+  color:#241a08;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  border-radius:6px;padding:1px 7px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ad-banner-title{
+  color:#fff;font-size:15px;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ad-banner-desc{
+  color:var(--muted);font-size:12px;line-height:1.25;margin:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ad-banner-cta{flex:0 0 auto;color:var(--lime);font-size:12px;font-weight:700;white-space:nowrap}
 .ad-banner-admin{
-  align-self:flex-start;color:var(--muted);font-size:14px;padding:8px 10px;border-left:1px solid var(--line);
+  flex:0 0 auto;align-self:stretch;display:flex;align-items:center;
+  color:var(--muted);font-size:13px;padding:0 9px;border-left:1px solid var(--line);
 }
 .ad-banner-admin:hover{color:#fff;background:rgba(255,255,255,.06)}
 
-@media (max-width:600px){
-  .ad-banner-link{flex-direction:column;gap:0}
-  .ad-banner-img{flex:0 0 auto}
-  .ad-banner-img img{max-height:160px;height:auto}
+/* En pantallas estrechas el banner no puede medir 728 px: se recorta la parte
+ * menos importante (descripción y llamada) y se mantiene la franja de 90 px. */
+@media (max-width:620px){
+  .ad-banner-img{flex:0 0 92px}
+  .ad-banner-desc{display:none}
+  .ad-banner-cta{display:none}
+  .ad-banner-body{padding:7px 10px}
 }
 
 /* ---------- ESTADÍSTICAS ADMIN ---------- */

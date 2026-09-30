@@ -17,6 +17,22 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 <?php if ($flash): ?><div class="alert <?= $flash[0] === 'ok' ? 'ok' : 'error' ?>"><?= e($flash[1]) ?></div><?php endif; ?>
 
+<h3 class="section-title">Vista previa</h3>
+<p class="muted" style="margin-top:-6px">
+  Así se verá arriba del área de trabajo, a <strong>728 × 90 px</strong>, el ancho de la columna.
+  Se actualiza mientras escribes.
+</p>
+<div class="ad-banner" id="banner-preview" data-image="<?= e($editing['image'] ?? '') ?>">
+  <div class="ad-banner-link"><div class="ad-banner-body">
+    <span class="ad-banner-head">
+      <span class="ad-banner-tag">📢 Publicidad</span>
+      <span class="ad-banner-cta">Ver el anuncio →</span>
+    </span>
+    <strong class="ad-banner-title">El título del anuncio aparece aquí</strong>
+    <p class="ad-banner-desc">Y debajo su descripción, corta si es muy larga.</p>
+  </div></div>
+</div>
+
 <div class="two-col">
   <div>
     <h3 class="section-title"><?= $editing ? 'Editar anuncio' : 'Añadir anuncio' ?></h3>
@@ -46,6 +62,11 @@ require_once __DIR__ . '/includes/header.php';
         </label>
         <div class="field-label">Imagen del banner</div>
       </div>
+      <p class="muted" style="margin:-4px 0 8px">
+        Se recorta a la franja de 90 px de alto, así que la que mejor queda es una
+        imagen apaisada de <strong>728 × 90 px</strong>. Si no subes ninguna, se usa
+        la que se detecte en el enlace.
+      </p>
       <label class="file-picker"><input type="file" name="image" accept="image/*"> 📷 Subir imagen</label>
       <input type="hidden" name="image_imported" id="image-imported" value="">
       <?php if (!empty($editing['image'])): ?><img class="thumb" src="<?= e($editing['image']) ?>" alt=""><?php endif; ?>
@@ -57,6 +78,51 @@ require_once __DIR__ . '/includes/header.php';
     </form>
     <script>
     (function(){
+      /* ---------- Vista previa 728x90 (se redibuja al escribir) ---------- */
+      var pv = document.getElementById('banner-preview');
+      var field = function(sel){ return document.querySelector(sel); };
+      var esc = function(s){
+        return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+          return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+        });
+      };
+      var picked = '';   /* imagen elegida en este momento */
+      function paint(){
+        if (!pv) return;
+        var title = (field('input[name=title]') || {}).value || '';
+        var desc  = (field('textarea[name=description]') || {}).value || '';
+        var src   = (field('#banner-source') || {}).value || '';
+        var url   = (field('#banner-url') || {}).value || '';
+        var imp   = (field('#image-imported') || {}).value || '';
+        var img   = picked || imp || pv.getAttribute('data-image') || '';
+        var html = '';
+        if (img) html += '<div class="ad-banner-img"><img src="' + esc(img) + '" alt=""></div>';
+        html += '<div class="ad-banner-body">'
+          + '<span class="ad-banner-head">'
+          + '<span class="ad-banner-tag">📢 Publicidad' + (src.trim() ? ' · ' + esc(src.trim()) : '') + '</span>'
+          + (url.trim() ? '<span class="ad-banner-cta">Ver el anuncio →</span>' : '')
+          + '</span>'
+          + (title.trim() ? '<strong class="ad-banner-title">' + esc(title.trim()) + '</strong>' : '')
+          + (desc.trim() ? '<p class="ad-banner-desc">' + esc(desc.trim()) + '</p>' : '')
+          + '</div>';
+        pv.innerHTML = html;
+      }
+      if (pv) {
+        ['input[name=title]', 'textarea[name=description]', '#banner-source', '#banner-url']
+          .forEach(function(sel){
+            var el = field(sel);
+            if (el) el.addEventListener('input', paint);
+          });
+        var file = field('input[type=file]');
+        if (file) file.addEventListener('change', function(){
+          if (picked) { try { URL.revokeObjectURL(picked); } catch (e) {} }
+          picked = (file.files && file.files[0]) ? URL.createObjectURL(file.files[0]) : '';
+          paint();
+        });
+        paint();
+      }
+
+      /* ---------- Rellenar los datos desde el enlace ---------- */
       var btn = document.getElementById('btn-fetch-url');
       if (!btn) return;
       btn.addEventListener('click', function(){
@@ -80,6 +146,7 @@ require_once __DIR__ . '/includes/header.php';
             f('#banner-source', d.source);
             var imp = document.getElementById('image-imported');
             if (d.image && imp) imp.value = d.image;
+            paint();
             status.textContent = d.warning || ('Origen reconocido: ' + (d.source || 'desconocido') + '. Revisa y pulsa Guardar.');
           })
           .catch(function(){ btn.disabled = false; status.textContent = 'Error de red. Inténtalo de nuevo.'; });

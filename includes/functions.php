@@ -846,11 +846,15 @@ function ad_banner_html(): string {
         $inner .= '<div class="ad-banner-img"><img src="' . e($img) . '" alt="' . e($title) . '"></div>';
     }
     $desc = trim((string)($b['description'] ?? ''));
+    /* Etiqueta y llamada van en la misma fila para que quepa todo en los 90 px
+     * de alto; el título y la descripción se cortan con puntos suspensivos. */
     $inner .= '<div class="ad-banner-body">'
+        . '<span class="ad-banner-head">'
         . '<span class="ad-banner-tag">📢 Publicidad' . ($tag !== '' ? ' · ' . e($tag) : '') . '</span>'
-        . ($title !== '' ? '<strong class="ad-banner-title">' . e($title) . '</strong>' : '')
-        . ($desc !== '' ? '<p class="ad-banner-desc">' . e(mb_strimwidth($desc, 0, 180, '…')) . '</p>' : '')
         . ($link ? '<span class="ad-banner-cta">Ver el anuncio →</span>' : '')
+        . '</span>'
+        . ($title !== '' ? '<strong class="ad-banner-title">' . e($title) . '</strong>' : '')
+        . ($desc !== '' ? '<p class="ad-banner-desc">' . e($desc) . '</p>' : '')
         . '</div>';
 
     $h .= $link
