@@ -2,6 +2,16 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_admin();
 verify_csrf();
+
+/* Si el código llegó antes que la base de datos (subida a mano, actualización
+ * fallida), se crea aquí lo que falte. Sin esto el guardado daba un error 500
+ * en blanco del que no se puede saber la causa. */
+$issues = ensure_schema();
+if (!empty($issues)) {
+    $_SESSION['flash'] = ['error', reset($issues)];
+    redirect('banner_admin.php');
+}
+
 $action = $_POST['action'] ?? '';
 
 if ($action === 'save') {
@@ -42,22 +52,31 @@ if ($action === 'save') {
         }
     }
 
-    if ($id) {
-        db()->prepare('UPDATE ' . t('ad_banners') . ' SET title=?, description=?, url=?, source=?, image=?, active=?, sort_order=? WHERE id=?')
-            ->execute([$title, $desc ?: null, $url, $source ?: null, $image, $active, $sort, $id]);
-        $_SESSION['flash'] = ['ok', 'Anuncio actualizado.'];
-    } else {
-        db()->prepare('INSERT INTO ' . t('ad_banners') . ' (title, description, url, source, image, active, sort_order) VALUES (?,?,?,?,?,?,?)')
-            ->execute([$title, $desc ?: null, $url, $source ?: null, $image, $active, $sort]);
-        $_SESSION['flash'] = ['ok', 'Anuncio añadido: ya aparece en la parte alta del área de trabajo.'];
+    try {
+        if ($id) {
+            db()->prepare('UPDATE ' . t('ad_banners') . ' SET title=?, description=?, url=?, source=?, image=?, active=?, sort_order=? WHERE id=?')
+                ->execute([$title, $desc ?: null, $url, $source ?: null, $image, $active, $sort, $id]);
+            $_SESSION['flash'] = ['ok', 'Anuncio actualizado.'];
+        } else {
+            db()->prepare('INSERT INTO ' . t('ad_banners') . ' (title, description, url, source, image, active, sort_order) VALUES (?,?,?,?,?,?,?)')
+                ->execute([$title, $desc ?: null, $url, $source ?: null, $image, $active, $sort]);
+            $_SESSION['flash'] = ['ok', 'Anuncio añadido: ya aparece en la parte alta del área de trabajo.'];
+        }
+    } catch (PDOException $ex) {
+        /* Nunca una pantalla en blanco: se explica qué ha pasado. */
+        $_SESSION['flash'] = ['error', 'No se pudo guardar el anuncio (' . $ex->getMessage() . ').'];
     }
     redirect('banner_admin.php');
 }
 
 if ($action === 'delete') {
     $id = (int)($_POST['id'] ?? 0);
-    db()->prepare('DELETE FROM ' . t('ad_banners') . ' WHERE id = ?')->execute([$id]);
-    $_SESSION['flash'] = ['ok', 'Anuncio eliminado.'];
+    try {
+        db()->prepare('DELETE FROM ' . t('ad_banners') . ' WHERE id = ?')->execute([$id]);
+        $_SESSION['flash'] = ['ok', 'Anuncio eliminado.'];
+    } catch (PDOException $ex) {
+        $_SESSION['flash'] = ['error', 'No se pudo eliminar el anuncio (' . $ex->getMessage() . ').'];
+    }
     redirect('banner_admin.php');
 }
 

@@ -19,6 +19,11 @@ if (is_admin()) {
     $upd = update_available();
     if ($upd) $updateBanner = $upd;
 }
+
+/* Autoparchado: si la base de datos se quedó atrás (código subido a mano o
+ * actualización fallida), se arregla solo. Si no puede, se explica aquí en
+ * lugar de dejar al usuario con una pantalla en blanco. */
+$schemaIssues = ensure_schema();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -130,6 +135,12 @@ if (is_admin()) {
 
   <!-- ===================== ÁREA DE TRABAJO ===================== -->
   <main class="content">
+  <?php if (!empty($schemaIssues)): ?>
+    <div class="alert error">
+      <strong>La base de datos necesita una actualización.</strong>
+      <?= e(reset($schemaIssues)) ?>
+    </div>
+  <?php endif; ?>
   <?= ad_banner_html() ?>
   <?php if ($updateBanner): ?>
     <div class="update-banner">

@@ -1096,6 +1096,70 @@ function update_notify_admins(): void {
     if ($sent) update_state_write([$key => true]);
 }
 
+/* === Autoparchado del esquema ===
+ * En un hosting compartido la base de datos no siempre está a la par que el
+ * código: si se sube el código a mano (o falla una actualización) las tablas
+ * nuevas no aparecen y la web responde con un error 500 en blanco, que es
+ * muy difícil de diagnosticar. Esta función comprueba (una vez por versión)
+ * qué falta y lo crea. Todo es idempotente y nunca lanza errores.
+ * Devuelve la lista de arreglos aplicados; si no puede, [].
+ */
+function ensure_schema(): array {
+    static $done = false;
+    if ($done) return [];
+    $done = true;
+
+    /* No se intenta si el usuario de MySQL no puede crear tablas: se avisa
+     * en la propia pantalla en lugar de arriesgar un error 500. */
+    try {
+        $pdo = db();
+        $pdo->query('SELECT 1');
+    } catch (Throwable $e) {
+        return ['bd' => 'No se pudo conectar con la base de datos. Revisa config.php.'];
+    }
+
+    $missing = table_missing();
+    if (!$missing) {
+        try { $pdo->query('SELECT 1 FROM ' . t('ad_banners') . ' LIMIT 1'); } catch (Throwable $e) { $missing = ['ad_banners']; }
+    }
+    if (!$missing) return [];
+
+    try {
+        run_migrations($pdo);
+        /* Comprobación posterior: si sigue faltando, el usuario de MySQL no
+         * tiene permiso para crearla (lo típico en un hosting). */
+        $still = table_missing();
+        try { $pdo->query('SELECT 1 FROM ' . t('ad_banners') . ' LIMIT 1'); } catch (Throwable $e) { $still[] = 'ad_banners'; }
+        if ($still) {
+            return ['db' => 'La base de datos está desfasada: falta la tabla ' . implode(', ', array_unique($still))
+                . '. Pide a tu hosting que te dé permiso para crear tablas, o ejecuta esta consulta en phpMyAdmin:  '
+                . 'CREATE TABLE `' . DB_PREFIX . 'ad_banners` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `title` VARCHAR(160) NOT NULL, '
+                . '`description` VARCHAR(400) DEFAULT NULL, `image` VARCHAR(255) DEFAULT NULL, `url` VARCHAR(300) NOT NULL, '
+                . '`source` VARCHAR(120) DEFAULT NULL, `active` TINYINT(1) NOT NULL DEFAULT 1, `sort_order` INT NOT NULL DEFAULT 0, '
+                . '`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'];
+        }
+    } catch (Throwable $e) {
+        return ['db' => 'No se pudo actualizar la base de datos: ' . $e->getMessage()];
+    }
+    return $missing;
+}
+
+/* Tablas imprescindibles que aún no existen (idempotente, sin lanzar). */
+function table_missing(): array {
+    $pdo = db();
+    $need = ['ad_banners' => 'Anuncios (banner)', 'payment_methods' => 'Métodos de pago'];
+    $out = [];
+    try {
+        $rows = $pdo->query('SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()')->fetchAll(PDO::FETCH_COLUMN);
+    } catch (Throwable $e) {
+        return [];
+    }
+    foreach ($need as $tbl => $label) {
+        if (!in_array(t($tbl), $rows, true)) $out[] = $tbl;
+    }
+    return $out;
+}
+
 /* Migraciones de esquema compartidas por install.php y el auto-actualizador.
  * Se ejecutan siempre: deben ser idempotentes. */
 function run_migrations(PDO $pdo): void {
