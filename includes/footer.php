@@ -74,10 +74,25 @@ $me = current_user();
 
 <script src="assets/js/app.js?v=12"></script>
 <script>
-/* Registro del service worker (PWA instalable). Requiere HTTPS o localhost. */
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-  navigator.serviceWorker.register('service-worker.js').catch(function () {});
-}
+/* Registro del service worker (PWA instalable). Requiere HTTPS o localhost.
+ *
+ * Se registra con una ruta ABSOLUTA calculada a partir de la URL de la propia
+ * página. Antes era 'service-worker.js' a secas: eso solo funciona si la app
+ * está en la raíz del dominio. Si está en una subcarpeta
+ * (ejemplo.com/airsoft/), el navegador la resuelve como
+ * /airsoft/pagina/service-worker.js, el registro falla y Chrome no ofrece
+ * instalar la app. El error además se tragaba en silencio, así que no había
+ * forma de saberlo. */
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
+  /* Rutas de la app: /dominio/subcarpeta/pagina.php -> /dominio/subcarpeta/ */
+  var dir = location.pathname.replace(/[^\/]*$/, '');
+  var swUrl = dir + 'service-worker.js';
+  navigator.serviceWorker.register(swUrl).catch(function (err) {
+    console.error('[PWA] No se pudo registrar el service worker:', err, swUrl);
+  });
+})();
 </script>
 </body>
 </html>

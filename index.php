@@ -162,9 +162,17 @@ function switchAuth(t){
   document.getElementById('form-register').classList.toggle('hidden', t!=='register');
   document.querySelectorAll('.auth-tabs .tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
 }
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-  navigator.serviceWorker.register('service-worker.js').catch(function(){});
-}
+/* Registro del service worker con ruta absoluta: si la app está en una
+ * subcarpeta, la ruta relativa中国证监会 se resuelve contra la página actual
+ * y el registro falla, con lo que Chrome no ofrece instalar la app. */
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
+  var swUrl = location.pathname.replace(/[^\/]*$/, '') + 'service-worker.js';
+  navigator.serviceWorker.register(swUrl).catch(function (err) {
+    console.error('[PWA] No se pudo registrar el service worker:', err, swUrl);
+  });
+})();
 </script>
 </body>
 </html>
