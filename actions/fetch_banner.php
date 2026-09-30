@@ -26,12 +26,35 @@ $nota   = '';
 $kind   = (string)($meta['image_kind'] ?? '');
 
 if ($kind === 'favicon') {
-    /* Es el icono de la web (32x32). En un banner de 728x90 se ve fatal, así
-     * que no se pone nada y se dice claramente que suba una imagen. */
-    $nota = 'Esa web no tiene ninguna imagen para el anuncio (solo su icono, de 32 × 32 px), '
-          . 'así que no se ha puesto ninguna. Abre el anuncio, guarda la imagen que quieras '
-          . 'promocionar en tu móvil o ordenador y súbela con «📷 Subir imagen» '
-          . '(lo mejor, una de 728 × 90 px).';
+    /* La web no declara ninguna imagen de OpenGraph ni de Twitter, así que lo
+     * único que hay es su icono de 32x32. En un banner de 728x90 se vería fatal,
+     * de modo que no se pone nada. Antes el mensaje daba por hecho que el icono
+     * se podía descargar, pero muchos servidores responden a los .ico con un
+     * 204 vacío: se intentaba la descarga, fallaba y se encadenaban dos avisos
+     * confusos. Aquí se distingue lo que de verdad ha pasado:
+     *   - 204/404/403 al pedir el icono -> ni se ha podido mirar su tamaño.
+     *   - se ha descargado y era diminuto -> sí sabemos que es un icono. */
+    $ico = save_remote_image($meta['image'], 'banners', $url);
+    if ($ico['ok']) {
+        /* Se ha descargado para poder medirlo, pero no se guarda: un icono de
+         * 32x32 no sirve de banner. Se mide y se borra para no dejar basura. */
+        $medida = banner_image_size($ico['path']);
+        @unlink(dirname(__DIR__) . '/' . $ico['path']);
+        $nota = 'Esa web no tiene ninguna imagen para el anuncio: lo único que declara es su icono, '
+              . 'de ' . ($medida[0] > 0 ? $medida[0] . ' × ' . $medida[1] . ' px' : 'tamaño desconocido') . ', '
+              . 'demasiado pequeño para un banner de 728 × 90. Abre el anuncio en el navegador, '
+              . 'guarda la imagen que quieras promocionar en tu móvil u ordenador y súbela con '
+              . '«📷 Subir imagen» (lo mejor, una de 728 × 90 px).';
+    } else {
+        /* Ni siquiera se deja descargar el icono (casi siempre un 204 vacío).
+         * No se ha mirado su tamaño, así que no se afirma que sea de 32x32 y no
+         * se suelta el código HTTP: para quien administra esto el dato útil es
+         * que tiene que subir la imagen a mano, no el motivo del 204. */
+        $nota = 'Esa web no tiene ninguna imagen para el anuncio, y su icono pequeño ni siquiera se '
+              . 'deja descargar, así que no se ha podido usar. Abre el anuncio en el navegador, guarda '
+              . 'la imagen que quieras promocionar en tu móvil u ordenador y súbela con '
+              . '«📷 Subir imagen» (lo mejor, una de 728 × 90 px).';
+    }
 } elseif ($meta['image'] !== '') {
     /* 120x60 es el mínimo razonable: por debajo es un icono, y en un banner de
      * 728x90 se vería fatal. save_remote_image() lo rechaza ANTES de escribir
