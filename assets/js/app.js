@@ -75,6 +75,16 @@ function previewAvatar(input){
   reader.readAsDataURL(input.files[0]);
 }
 
+/* ---- Salir de la aplicación (cierra sesión y cierra la ventana si es la app instalada) ---- */
+function confirmExit(){
+  return window.confirm('¿Salir de la aplicación? Se cerrará tu sesión.');
+}
+function exitApp(){
+  if (!confirmExit()) return;
+  try { window.close(); } catch (e) {}
+  window.location.href = 'logout.php';
+}
+
 /* ---- Instalación de la app (PWA): icono de escritorio / móvil ---- */
 var deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', function(e){

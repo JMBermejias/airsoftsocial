@@ -73,9 +73,14 @@ if ($step === 1 && $_SERVER['REQUEST_METHOD'] === 'POST') {
             . "define('DB_PREFIX', '');\n"
             . "define('APP_NAME', 'Airsoft Social');\n"
             . "date_default_timezone_set('Europe/Madrid');\n";
-        file_put_contents(__DIR__ . '/../config.php', $cfg);
-        $_SESSION['install_done'] = true;
-        redirect('install.php?step=2');
+        $wrote = @file_put_contents(__DIR__ . '/../config.php', $cfg);
+        if ($wrote === false) {
+            $errs[] = 'No se pudo escribir el archivo config.php en la raíz de la web. Exporta el siguiente contenido y súbelo manualmente como config.php (File Manager -> Create File):';
+            $errs['show_cfg'] = $cfg;
+        } else {
+            $_SESSION['install_done'] = true;
+            redirect('install.php?step=2');
+        }
     }
 }
 ?>
@@ -111,7 +116,16 @@ if ($step === 1 && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="auth-card">
       <h3>Configuración inicial</h3>
       <?php if (!empty($errs)): ?>
-        <?php foreach ($errs as $er): ?><div class="alert error"><?= e($er) ?></div><?php endforeach; ?>
+        <?php foreach ($errs as $ek => $er): ?>
+          <?php if ($ek === 'show_cfg'): ?>
+            <div class="alert error">
+              <strong>Contenido para config.php:</strong>
+              <textarea readonly rows="12" style="width:100%;font-family:monospace;font-size:12px;margin-top:8px;"><?= e($er) ?></textarea>
+            </div>
+          <?php else: ?>
+            <div class="alert error"><?= e($er) ?></div>
+          <?php endif; ?>
+        <?php endforeach; ?>
       <?php endif; ?>
       <form method="post" action="install.php?step=1">
         <h4 class="form-section">Base de datos (los datos de tu hosting)</h4>

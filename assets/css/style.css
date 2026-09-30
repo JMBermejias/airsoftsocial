@@ -93,6 +93,11 @@ h1,h2,h3,h4{margin:.2em 0;line-height:1.2}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:var(--text);margin-bottom:2px}
 .nav-item:hover{background:rgba(255,255,255,.06)}
 .nav-item.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#201a10;font-weight:700}
+.nav-item.nav-exit{width:100%;border:none;background:none;font-family:inherit;font-size:15px;text-align:left;cursor:pointer;color:var(--danger)}
+.nav-item.nav-exit:hover{background:rgba(201,79,61,.22);color:#fff}
+.sidebar-foot-links{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sidebar-foot-links .exit-link{color:var(--danger);font-weight:700}
+.sidebar-foot-links .exit-link:hover{color:#fff}
 .nav-ico{width:22px;text-align:center}
 .badge{
   background:var(--accent);color:#241a08;font-size:11px;
@@ -355,6 +360,36 @@ textarea{resize:vertical}
 .row-actions{display:flex;gap:6px;align-items:center;margin-left:auto}
 .admin-row{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
 
+/* ---------- BANNER DE PUBLICIDAD (parte alta del área de trabajo) ---------- */
+.ad-banner{
+  position:relative;display:flex;align-items:stretch;margin-bottom:16px;
+  background:var(--panel);border:1px solid var(--accent);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.ad-banner-link{display:flex;align-items:stretch;gap:14px;flex:1;min-width:0;padding:0;color:var(--text)}
+.ad-banner-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.ad-banner-img{flex:0 0 200px;background:#111}
+.ad-banner-img img{width:100%;height:100%;max-height:170px;object-fit:cover;display:block}
+.ad-banner-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding:12px 14px}
+.ad-banner-tag{
+  align-self:flex-start;background:linear-gradient(180deg,var(--accent),var(--accent-2));
+  color:#241a08;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  border-radius:6px;padding:2px 8px;
+}
+.ad-banner-title{color:#fff;font-size:17px;line-height:1.25}
+.ad-banner-desc{color:var(--muted);font-size:13px;margin:0;overflow-wrap:break-word}
+.ad-banner-cta{color:var(--lime);font-size:13px;font-weight:700;margin-top:auto}
+.ad-banner-admin{
+  align-self:flex-start;color:var(--muted);font-size:14px;padding:8px 10px;border-left:1px solid var(--line);
+}
+.ad-banner-admin:hover{color:#fff;background:rgba(255,255,255,.06)}
+
+@media (max-width:600px){
+  .ad-banner-link{flex-direction:column;gap:0}
+  .ad-banner-img{flex:0 0 auto}
+  .ad-banner-img img{max-height:160px;height:auto}
+}
+
 /* ---------- ESTADÍSTICAS ADMIN ---------- */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
 .stat-card{text-align:center;padding:14px;display:flex;flex-direction:column}
@@ -408,6 +443,7 @@ textarea{resize:vertical}
   .sidebar{position:static!important;width:100%;height:auto}
   .left-sidebar .notif-box,.left-sidebar .sidebar-foot{display:none}
   .main-nav{flex-direction:row;flex-wrap:wrap;justify-content:center;overflow-x:auto}
+  .nav-item.nav-exit{width:auto}
   .store-sidebar{border-left:none;border-top:1px solid var(--line)}
   .content{padding:14px}
   .auth-wrap,.form-row,.two-col{grid-template-columns:1fr}

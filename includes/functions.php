@@ -7,7 +7,20 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once __DIR__ . '/../config.php';
+$__config = __DIR__ . '/../config.php';
+if (is_file($__config)) {
+    require_once $__config;
+} else {
+    /* Sin config.php: solo ocurre durante la instalación (install.php lo crea). */
+    define('DB_HOST', 'localhost');
+    define('DB_PORT', '3306');
+    define('DB_NAME', '');
+    define('DB_USER', '');
+    define('DB_PASS', '');
+    define('DB_PREFIX', '');
+    define('APP_NAME', 'Airsoft Social');
+    date_default_timezone_set('Europe/Madrid');
+}
 
 /* Conexión PDO única (singleton) */
 function db(): PDO {
@@ -50,7 +63,7 @@ function app_base(): string {
 }
 
 function redirect(string $path): void {
-    if (preg_match('#^https?://#i', $path) || str_starts_with($path, '/')) {
+    if (preg_match('#^https?://#i', $path) || substr($path, 0, 1) === '/') {
         header('Location: ' . $path);
     } else {
         header('Location: ' . app_base() . '/' . $path);
@@ -382,6 +395,214 @@ function save_remote_image(string $url, string $folder): ?string {
     return 'uploads/' . $folder . '/' . $name;
 }
 
+/* ---------- Banner de publicidad ----------
+ * Banner que el administrador coloca en la parte alta del área de trabajo.
+ * Se gestiona introduciendo una URL: la app reconoce sola de dónde viene el
+ * anuncio (sitio de origen, título, descripción e imagen), igual que hace
+ * con los productos de la tienda.
+ */
+
+/* Nombre reconocible del sitio de origen (YouTube, Amazon, Instagram…). */
+function known_site_name(string $host): string {
+    $h = strtolower(trim($host));
+    if ($h === '') return '';
+    $h = preg_replace('#^www\d?\.#', '', $h);
+    $map = [
+        'youtube.com' => 'YouTube', 'youtu.be' => 'YouTube',
+        'instagram.com' => 'Instagram',
+        'facebook.com' => 'Facebook', 'fb.watch' => 'Facebook',
+        'tiktok.com' => 'TikTok',
+        'twitter.com' => 'X (Twitter)', 'x.com' => 'X (Twitter)',
+        'twitch.tv' => 'Twitch',
+        'amazon.es' => 'Amazon', 'amazon.com' => 'Amazon', 'amazon.de' => 'Amazon', 'amzn.to' => 'Amazon',
+        'aliexpress.com' => 'AliExpress', 'aliexpress.es' => 'AliExpress',
+        'ebay.es' => 'eBay', 'ebay.com' => 'eBay',
+        'wallapop.com' => 'Wallapop',
+        'mil-anuncios.com' => 'Wallapop',
+        'airsoftpro.es' => 'AirsoftPro',
+        'airsoftfield.com' => 'Airsoft Field',
+        'bsglab.com' => 'BSG',
+        'hombretanque.com' => 'Hombre Tanque',
+        'softair.es' => 'SoftAir',
+    ];
+    foreach ($map as $domain => $name) {
+        if ($h === $domain || substr($h, -strlen('.' . $domain)) === '.' . $domain) return $name;
+    }
+    return '';
+}
+
+/* Identificador de vídeo de YouTube a partir de cualquier URL suya (o null). */
+function youtube_video_id(string $url): ?string {
+    $p = @parse_url($url);
+    if (!$p || empty($p['host'])) return null;
+    $host = strtolower(preg_replace('#^www\.#', '', $p['host']));
+    $path = $p['path'] ?? '';
+    if ($host === 'youtu.be') {
+        $id = trim($path, '/');
+        return preg_match('/^[A-Za-z0-9_-]{11}$/', $id) ? $id : null;
+    }
+    if (in_array($host, ['youtube.com', 'm.youtube.com', 'music.youtube.com', 'youtube-nocookie.com'], true)) {
+        if (!empty($p['query'])) {
+            parse_str($p['query'], $q);
+            if (!empty($q['v']) && preg_match('/^[A-Za-z0-9_-]{11}$/', $q['v'])) return $q['v'];
+        }
+        if (preg_match('~/(?:embed|v|shorts|live)/([A-Za-z0-9_-]{11})~', $path, $m)) return $m[1];
+    }
+    return null;
+}
+
+/* Lee el contenido de una etiqueta <meta> (property o name), en cualquier orden. */
+function meta_content(string $html, string $key): string {
+    $k = preg_quote($key, '~');
+    $pats = [
+        '~<meta[^>]+(?:property|name)="' . $k . '"[^>]*content="([^"]*)"~i',
+        '~<meta[^>]+content="([^"]*)"[^>]+(?:property|name)="' . $k . '"~i',
+    ];
+    foreach ($pats as $p) {
+        if (preg_match($p, $html, $m)) {
+            $v = trim(html_entity_decode($m[1], ENT_QUOTES, 'UTF-8'));
+            if ($v !== '') return $v;
+        }
+    }
+    return '';
+}
+
+/* Quita el sufijo del nombre del sitio en un título: "Mi vídeo - YouTube" → "Mi vídeo". */
+function clean_page_title(string $title): string {
+    $t = trim(preg_replace('/\s+/u', ' ', $title));
+    $t = preg_replace('~\s*[|\-–—·]\s*[^\|\-–—·]{2,45}$~u', '', $t);
+    return trim($t) !== '' ? trim($t) : trim($title);
+}
+
+/* Convierte una URL relativa del HTML en absoluta usando el enlace de origen. */
+function absolute_url(string $src, string $base): string {
+    $src = trim($src);
+    if ($src === '' || preg_match('#^(https?:)?//#i', $src)) return $src;
+    $p = @parse_url($base);
+    if (!$p || empty($p['host'])) return $src;
+    $scheme = $p['scheme'] ?? 'https';
+    if (strpos($src, '/') === 0) return $scheme . '://' . $p['host'] . $src;
+    $dir = rtrim(dirname($p['path'] ?? '/'), '/');
+    return $scheme . '://' . $p['host'] . $dir . '/' . $src;
+}
+
+/* Lee el banner de una URL: título, descripción, imagen y ORIGEN de donde viene.
+ * Devuelve ['title','description','image','source','warning','error']. */
+function fetch_banner_meta(string $url): array {
+    $out = ['title' => '', 'description' => '', 'image' => '', 'source' => '', 'warning' => '', 'error' => ''];
+
+    $host = (string)@parse_url($url, PHP_URL_HOST);
+    $out['source'] = known_site_name($host) ?: $host;
+
+    /* YouTube: la miniatura se puede construir sin necesidad de leer el HTML. */
+    $yt = youtube_video_id($url);
+    if ($yt !== null) {
+        $out['source'] = 'YouTube';
+        $out['image'] = 'https://i.ytimg.com/vi/' . $yt . '/hqdefault.jpg';
+        $out['title'] = 'Vídeo en YouTube';
+    }
+
+    [$code, $html] = http_get_like_browser($url);
+    if ($code !== 200 || $html === '') {
+        if ($out['image'] === '') {
+            $out['error'] = 'No se pudo abrir el enlace (código ' . $code . '). Comprueba la URL o rellena el título y la imagen a mano.';
+        } else {
+            $out['warning'] = 'No se pudo leer la página: se usan el origen y la miniatura detectados. Ajusta el título si quieres.';
+        }
+        return $out;
+    }
+
+    $title = meta_content($html, 'og:title') ?: meta_content($html, 'twitter:title');
+    if ($title === '' && preg_match('~<h1[^>]*>(.*?)</h1>~si', $html, $m)) {
+        $title = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($m[1]), ENT_QUOTES, 'UTF-8')));
+    }
+    if ($title === '' && preg_match('~<title[^>]*>(.*?)</title>~si', $html, $m)) {
+        $title = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($m[1]), ENT_QUOTES, 'UTF-8')));
+    }
+    $out['title'] = $title !== '' ? clean_page_title($title) : $out['title'];
+
+    $desc = meta_content($html, 'og:description') ?: meta_content($html, 'description') ?: meta_content($html, 'twitter:description');
+    $out['description'] = $desc !== '' ? trim(preg_replace('/\s+/u', ' ', $desc)) : '';
+
+    /* Imagen: la de OpenGraph, si no la de Twitter, si no el icono de Apple, si no el favicon. */
+    $img = meta_content($html, 'og:image') ?: meta_content($html, 'twitter:image');
+    if ($img === '' && preg_match('~<link[^>]+rel="[^"]*apple-touch-icon[^"]*"[^>]+href="([^"]+)"~i', $html, $m)) {
+        $img = trim($m[1]);
+    }
+    if ($img === '' && $host !== '' && $yt === null) {
+        $img = 'https://' . $host . '/favicon.ico';
+    }
+    $out['image'] = $img !== '' ? absolute_url($img, $url) : $out['image'];
+
+    $site = meta_content($html, 'og:site_name');
+    if ($site !== '') $out['source'] = clean_page_title($site);
+    elseif ($out['source'] === '' || $out['source'] === $host) $out['source'] = $host;
+
+    /* Si no hemos sacado nada en claro, la web seguramente nos bloqueó. */
+    if ($out['title'] === '' && $out['image'] === '') {
+        $out['error'] = 'La web bloqueó la lectura automática del enlace (verificación anti-bots). Rellena el título y la imagen a mano.';
+    }
+
+    return $out;
+}
+
+/* Banners de publicidad guardados (orden de visualización). */
+function ad_banners(): array {
+    try {
+        return db()->query('SELECT * FROM ' . t('ad_banners') . ' ORDER BY sort_order ASC, id DESC')->fetchAll();
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/* Banner visible en la parte alta del área de trabajo (el de menor orden). */
+function active_ad_banner(): ?array {
+    $all = ad_banners();
+    foreach ($all as $b) {
+        if ((int)$b['active'] === 1) return $b;
+    }
+    return null;
+}
+
+/* URL de destino del anuncio válida (solo http/https). */
+function ad_banner_link(?array $b): ?string {
+    $u = trim((string)($b['url'] ?? ''));
+    if ($u === '' || !preg_match('#^https?://#i', $u)) return null;
+    return $u;
+}
+
+/* Dibuja el banner de publicidad al inicio del área de trabajo ('' si no hay). */
+function ad_banner_html(): string {
+    $b = active_ad_banner();
+    if (!$b) return '';
+    $link = ad_banner_link($b);
+    $title = trim((string)($b['title'] ?? ''));
+    if ($title === '' && !$link) return '';
+
+    $img = trim((string)($b['image'] ?? ''));
+    $tag = trim((string)($b['source'] ?? ''));
+    $h = '<aside class="ad-banner" aria-label="Publicidad">';
+    $inner = '';
+    if ($img !== '' && preg_match('#^(https?://|uploads/)#i', $img)) {
+        /* Sin loading="lazy": la altura del banner depende de la imagen y el
+         * navegador no la cargaba (se quedaba a 0 px de alto). */
+        $inner .= '<div class="ad-banner-img"><img src="' . e($img) . '" alt="' . e($title) . '"></div>';
+    }
+    $desc = trim((string)($b['description'] ?? ''));
+    $inner .= '<div class="ad-banner-body">'
+        . '<span class="ad-banner-tag">📢 Publicidad' . ($tag !== '' ? ' · ' . e($tag) : '') . '</span>'
+        . ($title !== '' ? '<strong class="ad-banner-title">' . e($title) . '</strong>' : '')
+        . ($desc !== '' ? '<p class="ad-banner-desc">' . e(mb_strimwidth($desc, 0, 180, '…')) . '</p>' : '')
+        . ($link ? '<span class="ad-banner-cta">Ver el anuncio →</span>' : '')
+        . '</div>';
+
+    $h .= $link
+        ? '<a class="ad-banner-link" href="' . e($link) . '" target="_blank" rel="noopener nofollow sponsored">' . $inner . '</a>'
+        : '<div class="ad-banner-link">' . $inner . '</div>';
+    if (is_admin()) $h .= '<a class="ad-banner-admin" href="banner_admin.php" title="Gestionar anuncios">⚙️</a>';
+    return $h . '</aside>';
+}
+
 /* ---------- Amistades ---------- */
 
 function friendship_status(int $me, int $other): string {
@@ -645,4 +866,17 @@ function run_migrations(PDO $pdo): void {
     ];
     $ins = $pdo->prepare('INSERT IGNORE INTO ' . t('payment_methods') . ' (method_key, label, icon, meta, is_enabled, sort_order) VALUES (?,?,?,?,?,?)');
     foreach ($seed as $s) $ins->execute($s);
+
+    /* Banner de publicidad del área de trabajo. */
+    $pdo->exec('CREATE TABLE IF NOT EXISTS ' . t('ad_banners') . ' (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(160) NOT NULL,
+        description VARCHAR(400) DEFAULT NULL,
+        image VARCHAR(255) DEFAULT NULL,
+        url VARCHAR(300) NOT NULL COMMENT "Enlace de destino del anuncio (http/https)",
+        source VARCHAR(120) DEFAULT NULL COMMENT "Origen detectado del anuncio (nombre del sitio)",
+        active TINYINT(1) NOT NULL DEFAULT 1,
+        sort_order INT NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
 }

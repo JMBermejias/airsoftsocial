@@ -121,6 +121,18 @@ CREATE TABLE IF NOT EXISTS payment_methods (
   sort_order INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS ad_banners (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(160) NOT NULL,
+  description VARCHAR(400) DEFAULT NULL,
+  image VARCHAR(255) DEFAULT NULL,
+  url VARCHAR(300) NOT NULL COMMENT 'Enlace de destino del anuncio (http/https)',
+  source VARCHAR(120) DEFAULT NULL COMMENT 'Origen detectado del anuncio (nombre del sitio)',
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS notifications (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL COMMENT 'Destinatario',

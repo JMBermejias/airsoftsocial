@@ -7,6 +7,7 @@ uploads/posts/*
 uploads/stories/*
 uploads/fields/*
 uploads/products/*
+uploads/banners/*
 uploads/_system/**
 !uploads/**/.gitkeep
 

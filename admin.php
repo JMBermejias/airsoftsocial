@@ -65,6 +65,11 @@ require_once __DIR__ . '/includes/header.php';
   <?php endforeach; ?>
 </div>
 
+<div class="toolbar">
+  <a class="btn btn-ghost" href="store_admin.php">🛒 Gestionar tienda</a>
+  <a class="btn btn-ghost" href="banner_admin.php">📢 Gestionar anuncios (banner)</a>
+</div>
+
 <h3 class="section-title">Campos pendientes de aprobación</h3>
 <?php if (!$pending_fields): ?>
   <div class="card empty">No hay campos pendientes. Este apartado se rellena cuando los usuarios dan de alta campos.</div>

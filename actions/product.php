@@ -32,7 +32,7 @@ if ($action === 'save') {
     } elseif (!empty($_POST['image_imported'])) {
         /* Imagen traída automáticamente desde el enlace de afiliado y guardada en uploads/products/. */
         $imp = trim($_POST['image_imported']);
-        if (str_contains($imp, '..') === false && is_file(dirname(__DIR__) . '/' . $imp)) {
+        if (strpos($imp, '..') === false && is_file(dirname(__DIR__) . '/' . $imp)) {
             $image = $imp;
         }
     }

@@ -35,7 +35,7 @@ if (is_admin()) {
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>
-<link rel="stylesheet" href="assets/css/style.css?v=4">
+<link rel="stylesheet" href="assets/css/style.css?v=7">
 </head>
 <body>
 <div class="layout">
@@ -86,11 +86,17 @@ if (is_admin()) {
       <a href="admin.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) === 'admin.php' ? 'active' : '' ?>">
         <span class="nav-ico">🛠️</span> Panel admin
       </a>
+      <a href="banner_admin.php" class="nav-item <?= strpos(basename($_SERVER['PHP_SELF']), 'banner') === 0 ? 'active' : '' ?>">
+        <span class="nav-ico">📢</span> Anuncios
+      </a>
       <a href="updates.php" class="nav-item <?= strpos(basename($_SERVER['PHP_SELF']), 'updates') === 0 ? 'active' : '' ?>">
         <span class="nav-ico">⬆️</span> Actualizar app
         <?php if ($updateBanner): ?><span class="badge"><?= e($updateBanner['latest']) ?></span><?php endif; ?>
       </a>
       <?php endif; ?>
+      <button type="button" class="nav-item nav-exit" onclick="exitApp()">
+        <span class="nav-ico">🚪</span> Salir
+      </button>
     </nav>
 
     <div class="notif-box">
@@ -115,12 +121,16 @@ if (is_admin()) {
 
     <div class="sidebar-foot">
       <button class="pwa-install" onclick="pwaInstall()">⬇️ Instalar la app (icono en escritorio / móvil)</button>
-      <a href="feed.php">Volver al inicio</a>
+      <div class="sidebar-foot-links">
+        <a href="feed.php">Volver al inicio</a>
+        <a href="logout.php" class="exit-link" onclick="return confirmExit()">🚪 Salir de la aplicación</a>
+      </div>
     </div>
   </aside>
 
   <!-- ===================== ÁREA DE TRABAJO ===================== -->
   <main class="content">
+  <?= ad_banner_html() ?>
   <?php if ($updateBanner): ?>
     <div class="update-banner">
       <span>⬆️ Nueva versión <strong>v<?= e($updateBanner['latest']) ?></strong> de <?= e(APP_NAME) ?> disponible</span>

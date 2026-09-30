@@ -9,7 +9,8 @@ Red social para la comunidad de **airsoft** pensada para alojarse en cualquier *
 | Módulo | Descripción |
 |---|---|
 | **Registro / Login** | Creación de usuarios y sesión segura (contraseñas con `password_hash`). El **primer usuario** registrado puede marcarse **Administrador** (únicamente si aún no existe ningún admin). |
-| **Panel izquierdo (dashboard)** | Navegación de la red: noticias, historias, amigos, campos, tienda y perfil. Incluye campanita de notificaciones y botón **Instalar la app** (icono de escritorio / móvil). |
+| **Panel izquierdo (dashboard)** | Navegación de la red: noticias, historias, amigos, campos, tienda y perfil. Incluye campanita de notificaciones, botón **Salir de la aplicación** (🚪, cierra la sesión y la ventana si está instalada) y botón **Instalar la app** (icono en escritorio / móvil). |
+| **Banner de publicidad** | Banner fijo en la **parte alta del área de trabajo (centro)**. El administrador solo pega la **URL** del anuncio y la app **reconoce sola de dónde viene**: origen (YouTube, Amazon, Instagram, tu tienda…), título, descripción e imagen (los guarda en `uploads/banners/`). Se activa, ordena o elimina desde **Gestionar anuncios**. |
 | **Área de trabajo (centro)** | Muro de noticias con publicaciones de texto, **imágenes** y **PDF**, etiquetas `#tags`, likes y comentarios. |
 | **Tienda online (panel derecho, siempre visible)** | Tienda **de afiliación** gestionada solo por el administrador. Cada producto tiene **ficha propia** (foto, precio, descripción) con las **formas de pago** que configure el admin (PayPal, Bizum, tarjeta, transferencia, efectivo) y su **enlace de afiliado**. |
 | **Noticias generales** | Si el **administrador** publica con la casilla **⭐ Noticia general**, la publicación llega a **todos los usuarios** de la red, no solo a amigos. El resto de publicaciones solo las ven el autor y sus amigos. |
@@ -20,7 +21,7 @@ Red social para la comunidad de **airsoft** pensada para alojarse en cualquier *
 | **Perfil completo** | Editar todos los datos (nombre, biografía, ubicación, experiencia, estilo, arma), **imagen de avatar** y contraseña. |
 | **Subida de archivos** | Imágenes (JPG/PNG/GIF/WEBP), **PDF** y **vídeos** en publicaciones/avatares/campos y **vídeos** en historias. Validación de tipo MIME real. **Sin tope fijo de tamaño** en la app: los archivos se aceptan hasta el límite que permita tu hosting (`upload_max_filesize` / `post_max_size`). |
 | **Actualización automática** | Cada 6 h la app comprueba si hay una **release más reciente** en GitHub y te **avisa** (campanilla 🔔, menú y banner). Con el botón **«Actualizar ahora»** se descarga e instala sola: `config.php`, `uploads/` y `.htaccess` quedan intactos junto con tus datos. |
-| **Panel de administración** | Aprobar campos, gestionar productos y **formas de pago**, **editar datos y rol de los usuarios** (incluido restablecer contraseña), subir/bajar de rango administrativo y eliminar usuarios. |
+| **Panel de administración** | Aprobar campos, gestionar productos y **formas de pago**, **gestionar los anuncios del banner**, **editar datos y rol de los usuarios** (incluido restablecer contraseña), subir/bajar de rango administrativo y eliminar usuarios. |
 | **App instalable (PWA)** | La red se instala como **aplicación con icono propio** en el escritorio (Chrome/Edge) y en el móvil (Android e iOS). |
 
 ---
@@ -34,7 +35,7 @@ Red social para la comunidad de **airsoft** pensada para alojarse en cualquier *
 /assets/css    → estilos
 /assets/js     → interacciones (visor de historias, búsquedas…)
 /assets/img    → avatar por defecto
-/uploads/      → avatares, posts, stories, fields, products (subidas de los usuarios)
+/uploads/      → avatares, posts, stories, fields, products, banners (subidas de los usuarios)
 config.php     → credenciales de la base de datos
 schema.sql     → esquema de base de datos
 install.php    → instalador guiado (¡borrar después!)
