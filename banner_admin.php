@@ -36,10 +36,6 @@ require_once __DIR__ . '/includes/header.php';
 </p>
 <div class="ad-banner" id="banner-preview" data-image="<?= e($editing['image'] ?? '') ?>">
   <div class="ad-banner-link"><div class="ad-banner-body">
-    <span class="ad-banner-head">
-      <span class="ad-banner-tag">📢 Publicidad</span>
-      <span class="ad-banner-cta">Ver el anuncio →</span>
-    </span>
     <strong class="ad-banner-title">El título del anuncio aparece aquí</strong>
     <p class="ad-banner-desc">Y debajo su descripción, corta si es muy larga.</p>
   </div></div>
@@ -116,19 +112,14 @@ require_once __DIR__ . '/includes/header.php';
         if (!pv) return;
         var title = (field('input[name=title]') || {}).value || '';
         var desc  = (field('textarea[name=description]') || {}).value || '';
-        var src   = (field('#banner-source') || {}).value || '';
-        var url   = (field('#banner-url') || {}).value || '';
         var html = '';
         if (img && isWide) html += '<span class="ad-banner-cover"><img src="' + esc(img) + '" alt=""></span>';
         else if (img)      html += '<div class="ad-banner-img"><img src="' + esc(img) + '" alt=""></div>';
-        html += '<div class="ad-banner-body">'
-          + '<span class="ad-banner-head">'
-          + '<span class="ad-banner-tag">📢 Publicidad' + (src.trim() ? ' · ' + esc(src.trim()) : '') + '</span>'
-          + (url.trim() ? '<span class="ad-banner-cta">Ver el anuncio →</span>' : '')
-          + '</span>'
-          + (title.trim() ? '<strong class="ad-banner-title">' + esc(title.trim()) + '</strong>' : '')
-          + (desc.trim() ? '<p class="ad-banner-desc">' + esc(desc.trim()) + '</p>' : '')
-          + '</div>';
+        /* Sin «📢 Publicidad» ni «Ver el anuncio →»: el banner entero es el
+         * enlace, igual que en la app (ad_banner_html). */
+        var body = (title.trim() ? '<strong class="ad-banner-title">' + esc(title.trim()) + '</strong>' : '')
+                 + (desc.trim()  ? '<p class="ad-banner-desc">' + esc(desc.trim()) + '</p>' : '');
+        if (body) html += '<div class="ad-banner-body">' + body + '</div>';
         pv.className = 'ad-banner' + (isWide ? ' ad-banner-wide' : '');
         pv.innerHTML = html;
         /* Al cargarse la imagen ya sabemos su proporción real: si es apaisada

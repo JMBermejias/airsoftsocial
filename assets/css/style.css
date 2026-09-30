@@ -398,7 +398,7 @@ textarea{resize:vertical}
 .ad-banner-cover{position:absolute;inset:0;background:#111;display:block}
 .ad-banner-cover img{width:100%;height:100%;object-fit:cover;display:block}
 .ad-banner-wide .ad-banner-body{
-  position:relative;max-width:64%;height:100%;
+  position:relative;max-width:72%;height:100%;
   background:linear-gradient(90deg,rgba(18,21,13,.94) 0%,rgba(18,21,13,.86) 55%,rgba(18,21,13,0) 100%);
 }
 .ad-banner-wide .ad-banner-admin{
@@ -406,12 +406,6 @@ textarea{resize:vertical}
 }
 .ad-banner-body{
   flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:7px 12px;
-}
-.ad-banner-head{display:flex;align-items:center;gap:10px;justify-content:space-between;min-width:0}
-.ad-banner-tag{
-  background:linear-gradient(180deg,var(--accent),var(--accent-2));
-  color:#241a08;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
-  border-radius:6px;padding:1px 7px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .ad-banner-title{
   color:#fff;font-size:15px;line-height:1.2;
@@ -421,7 +415,6 @@ textarea{resize:vertical}
   color:var(--muted);font-size:12px;line-height:1.25;margin:0;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.ad-banner-cta{flex:0 0 auto;color:var(--lime);font-size:12px;font-weight:700;white-space:nowrap}
 .ad-banner-admin{
   flex:0 0 auto;align-self:stretch;display:flex;align-items:center;
   color:var(--muted);font-size:13px;padding:0 9px;border-left:1px solid var(--line);
@@ -433,7 +426,6 @@ textarea{resize:vertical}
 @media (max-width:620px){
   .ad-banner-img{flex:0 0 84px}
   .ad-banner-desc{display:none}
-  .ad-banner-cta{display:none}
   .ad-banner-body{padding:7px 10px}
   .ad-banner-wide .ad-banner-body{max-width:80%}
 }
