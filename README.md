@@ -8,7 +8,7 @@ Red social para la comunidad de **airsoft** pensada para alojarse en cualquier *
 
 | Módulo | Descripción |
 |---|---|
-| **Registro / Login** | Creación de usuarios y sesión segura (contraseñas con `password_hash`). El **primer usuario** registrado puede marcarse **Administrador** (únicamente si aún no existe ningún admin). |
+| **Registro / Login** | Creación de usuarios y sesión segura (contraseñas con `password_hash`). Se entra **con el nombre de usuario o con el correo electrónico**, indistintamente (no hace falta acordarse de cuál se usó). El **primer usuario** registrado puede marcarse **Administrador** (únicamente si aún no existe ningún admin). |
 | **Panel izquierdo (dashboard)** | Navegación de la red: noticias, historias, amigos, campos, tienda y perfil. Incluye campanita de notificaciones, botón **Salir de la aplicación** (🚪, cierra la sesión y la ventana si está instalada) y botón **Instalar la app** (icono en escritorio / móvil). |
 | **Banner de publicidad** | Banner fijo en la **parte alta del área de trabajo (centro)**. El administrador solo pega la **URL** del anuncio y la app **reconoce sola de dónde viene**: origen (YouTube, Amazon, Instagram, tu tienda…), título, descripción e imagen (los guarda en `uploads/banners/`). Se activa, ordena o elimina desde **Gestionar anuncios**. |
 | **Área de trabajo (centro)** | Muro de noticias con publicaciones de texto, **imágenes** y **PDF**, etiquetas `#tags`, likes y comentarios. |
@@ -149,6 +149,28 @@ listo para pegar en phpMyAdmin.
 Un **502** casi nunca es un fallo de la app: suele ser que el servidor se queda sin
 memoria o sin tiempo. Si `health.php` está todo en verde y la web sigue sin cargar,
 pide a tu hosting que aumente el límite de memoria y de tiempo de PHP.
+
+---
+
+## 🔑 Entrar con nombre de usuario o con correo
+
+El login acepta **las dos cosas**: el nombre con el que te registraste
+(`sniper_24`) o tu correo (`juan@correo.com`). Da igual cuál uses.
+
+Si no funciona, la app te dice exactamente por qué, en vez de un error genérico:
+
+- **«No hay ninguna cuenta con …»** → el nombre de usuario está mal escrito (va
+  sin arroba, sin espacios, y solo con letras, números y `_`). El correo sí
+  admite atajos: con `nombre@` ya vale.
+- **«La contraseña no es correcta»** → el nombre existe, falla la contraseña. Si
+  no la recuerdas, un administrador puede cambiarla desde el panel.
+
+**Cuentas antiguas sin nombre de usuario.** Si tu base de datos venía de una
+versión anterior, puede haber cuentas que se quedaron sin nombre y que solo
+entran por correo. El panel de administración lo detecta, lo avisa arriba con un
+aviso rojo y tiene un botón que les asigna un nombre automáticamente (sacado del
+correo, sin repetir ninguno). Una vez reparado, esa cuenta entra con nombre y
+con correo.
 
 ---
 

@@ -31,6 +31,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($what === 'delete_user' && $target !== (int)$me['id']) {
         db()->prepare('DELETE FROM ' . t('users') . ' WHERE id = ?')->execute([$target]);
         $_SESSION['flash'] = ['ok', 'Usuario eliminado.'];
+    } elseif ($what === 'repair_usernames') {
+        try {
+            $n = repair_usernames();
+            $_SESSION['flash'] = $n > 0
+                ? ['ok', $n . ($n === 1 ? ' cuenta ha recibido' : ' cuentas han recibido') . ' un nombre de usuario y ya puede entrar con él. Lo verás en la columna «Usuario».']
+                : ['ok', 'Todas las cuentas tienen nombre de usuario. No había nada que arreglar.'];
+        } catch (Throwable $e) {
+            $_SESSION['flash'] = ['error', 'No se pudo reparar: ' . $e->getMessage()];
+        }
     }
     redirect('admin.php');
 }
@@ -56,8 +65,21 @@ $stats = [
 ];
 
 require_once __DIR__ . '/includes/header.php';
+
+$sin_usuario = users_without_username();
 ?>
 <?php if ($flash): ?><div class="alert <?= $flash[0] === 'ok' ? 'ok' : 'error' ?>"><?= e($flash[1]) ?></div><?php endif; ?>
+
+<?php if ($sin_usuario): ?>
+  <div class="alert error">
+    <strong><?= count($sin_usuario) ?> cuenta(s) no pueden entrar con nombre de usuario.</strong>
+    Estas cuentas se quedaron sin nombre (base de datos antigua) y solo entran con su correo.
+    <form method="post" style="margin-top:10px"><?= csrf_field() ?>
+      <input type="hidden" name="what" value="repair_usernames">
+      <button class="btn btn-primary" type="submit">🔧 Crearles un nombre de usuario</button>
+    </form>
+  </div>
+<?php endif; ?>
 
 <div class="stats-grid">
   <?php foreach ($stats as $k => $v): ?>

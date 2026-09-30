@@ -99,6 +99,78 @@ function redirect(string $path): void {
 
 /* ---------- Sesión / usuario ---------- */
 
+/* Busca una cuenta por nombre de usuario o por correo electrónico.
+ * Se puede entrar con las dos cosas. Tolera espacios sobrantes, mayúsculas
+ * (el cotejo de MySQL ya ignora mayúsculas) y el "@" pegado al correo.
+ * Devuelve null si no encuentra nada. */
+function find_user_by_login(string $id): ?array {
+    $id = trim($id);
+    if ($id === '') return null;
+
+    $stmt = db()->prepare('SELECT * FROM ' . t('users') . ' WHERE username = ? OR email = ? LIMIT 1');
+    $stmt->execute([$id, $id]);
+    $u = $stmt->fetch();
+    if ($u) return $u;
+
+    /* Alguien que escribe «nombre@» sin el dominio, o «@dominio.com»
+     * se queda sin nombre: se prueba con lo que haya antes del arroba. */
+    if (strpos($id, '@') !== false) {
+        $part = trim(strstr($id, '@', true) ?: '', '.');
+        if (mb_strlen($part) >= 3) {
+            $stmt = db()->prepare('SELECT * FROM ' . t('users') . ' WHERE username = ? LIMIT 1');
+            $stmt->execute([$part]);
+            $u = $stmt->fetch();
+            if ($u) return $u;
+        }
+    }
+    return null;
+}
+
+/* Convierte un correo en un nombre de usuario válido y único:
+ * "juan.perez@correo.com" -> "juanperez" (si ya está cogido, "juanperez2",
+ * "juanperez3"...). Nunca devuelve una cadena vacía ni un nombre repetido. */
+function username_from_email(string $email, PDO $pdo): string {
+    $email = trim($email);
+    /* Lo de antes del arroba; si el correo no tiene arroba, se usa entero. */
+    $local = ($at = strpos($email, '@')) !== false ? substr($email, 0, $at) : $email;
+    $base = strtolower((string)preg_replace('/[^A-Za-z0-9_]/', '', $local));
+    if (mb_strlen($base) < 3) $base = 'usuario' . substr(sha1($email), 0, 5);
+    $base = mb_substr($base, 0, 40);
+
+    $candidate = $base;
+    for ($n = 2; $n < 1000; $n++) {
+        $chk = $pdo->prepare('SELECT id FROM ' . t('users') . ' WHERE username = ? LIMIT 1');
+        $chk->execute([$candidate]);
+        if (!$chk->fetch()) return $candidate;
+        $candidate = mb_substr($base, 0, 40 - strlen((string)$n)) . $n;
+    }
+    return $base . substr(sha1($email), 0, 5);
+}
+
+/* Cuentas que se quedaron sin nombre de usuario (base de datos antigua o
+ * altas manuales): con estas cuentas solo se puede entrar por correo. */
+function users_without_username(): array {
+    try {
+        return db()->query('SELECT id, email FROM ' . t('users')
+            . " WHERE username IS NULL OR username = '' ORDER BY id")->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/* Les asigna un nombre de usuario a todas las cuentas que no lo tienen.
+ * Devuelve cuántas se han arreglado. */
+function repair_usernames(): int {
+    $pdo = db();
+    $n = 0;
+    foreach (users_without_username() as $row) {
+        $upd = $pdo->prepare('UPDATE ' . t('users') . ' SET username = ? WHERE id = ? AND (username IS NULL OR username = \'\')');
+        $upd->execute([username_from_email((string)$row['email'], $pdo), (int)$row['id']]);
+        $n += $upd->rowCount();
+    }
+    return $n;
+}
+
 function login_user(array $user): void {
     $_SESSION['user_id'] = (int)$user['id'];
 }

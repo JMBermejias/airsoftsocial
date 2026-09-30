@@ -12,14 +12,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($form === 'login') {
         $id = trim($_POST['id'] ?? '');
         $pass = $_POST['password'] ?? '';
-        $stmt = db()->prepare('SELECT * FROM ' . t('users') . ' WHERE email = ? OR username = ? LIMIT 1');
-        $stmt->execute([$id, $id]);
-        $u = $stmt->fetch();
+        $u = find_user_by_login($id);
         if ($u && password_verify($pass, $u['password'])) {
             login_user($u);
             redirect('feed.php');
         }
-        $error = 'Usuario o contraseña incorrectos.';
+        /* Dos mensajes distintos, porque son dos problemas distintos y el
+         * genérico hacía imposible saber cuál era: con «no existe la cuenta»
+         * se sabe que el nombre de usuario está mal escrito. */
+        $error = $u
+            ? 'La contraseña no es correcta. Si no la recuerdas, pídele a un administrador que te la cambie.'
+            : 'No hay ninguna cuenta con «' . $id . '». Entra con tu nombre de usuario o con tu correo electrónico.';
     } else {
         $username = preg_replace('/[^A-Za-z0-9_]/', '', trim($_POST['username'] ?? ''));
         $email = trim($_POST['email'] ?? '');
@@ -73,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= e(APP_NAME) ?> · Iniciar sesión</title>
-<link rel="stylesheet" href="assets/css/style.css?v=10">
+<link rel="stylesheet" href="assets/css/style.css?v=11">
 </head>
 <body class="auth-body">
 <div class="auth-wrap">
@@ -93,13 +96,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="post" action="index.php" id="form-login" class="auth-form">
       <input type="hidden" name="form" value="login">
-      <label>Usuario o correo
-        <input type="text" name="id" required autofocus placeholder="usuario@correo.com">
+      <label>Nombre de usuario o correo
+        <input type="text" name="id" required autofocus autocomplete="username"
+               autocapitalize="none" autocorrect="off" spellcheck="false"
+               placeholder="sniper_24  o  correo@ejemplo.com">
       </label>
       <label>Contraseña
-        <input type="password" name="password" required placeholder="••••••••">
+        <input type="password" name="password" required autocomplete="current-password" placeholder="••••••••">
       </label>
       <button class="btn btn-primary btn-block" type="submit">Entrar</button>
+      <p class="check-hint" style="margin:2px 0 0;text-align:center">
+        Con el mismo nombre con el que te registraste, o con tu correo.
+      </p>
     </form>
 
     <form method="post" action="index.php" id="form-register" class="auth-form hidden">
@@ -131,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
   <button class="btn btn-ghost btn-block pwa-install" onclick="pwaInstall()" style="margin-top:12px">⬇️ Instalar Airsoft Social en el escritorio / móvil</button>
 </div>
-<script src="assets/js/app.js?v=10"></script>
+<script src="assets/js/app.js?v=11"></script>
 <script>
 function switchAuth(t){
   document.getElementById('form-login').classList.toggle('hidden', t!=='login');
