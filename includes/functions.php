@@ -1125,65 +1125,114 @@ function update_notify_admins(): void {
 /* === Autoparchado del esquema ===
  * En un hosting compartido la base de datos no siempre está a la par que el
  * código: si se sube el código a mano (o falla una actualización) las tablas
- * nuevas no aparecen y la web responde con un error 500 en blanco, que es
- * muy difícil de diagnosticar. Esta función comprueba (una vez por versión)
- * qué falta y lo crea. Todo es idempotente y nunca lanza errores.
- * Devuelve la lista de arreglos aplicados; si no puede, [].
+ * nuevas no aparecen y la web responde con un error 500 en blanco.
+ *
+ * IMPORTANTE: esta función se llama en CADA página, así que debe ser
+ * muchísimo más barata que una migración. Por eso:
+ *   - solo se ejecuta si se detecta que falta algo (una consulta rápida), y
+ *     como mucho una vez cada SCHEMA_CHECK_HOURS horas;
+ *   - solo crea tablas con CREATE TABLE IF NOT EXISTS, nunca hace ALTER TABLE
+ *     (reconstruir una tabla en cada visita agotaba el servidor: 502);
+ *   - nunca lanza excepciones.
+ * Devuelve [] si todo está bien, o ['db' => explicación] si no puede arreglarlo.
  */
-function ensure_schema(): array {
+function ensure_schema(bool $force = false): array {
     static $done = false;
     if ($done) return [];
     $done = true;
 
-    /* No se intenta si el usuario de MySQL no puede crear tablas: se avisa
-     * en la propia pantalla en lugar de arriesgar un error 500. */
+    /* Solo administradores: una comprobación en cada visita de cada usuario
+     * es gastarse el servidor. Los que guardan datos (actions/*.php) la fuerzan. */
+    if (!$force && !is_admin()) return [];
+
+    $hours = 6;
+    if (defined('SCHEMA_CHECK_HOURS') && (int)SCHEMA_CHECK_HOURS > 0) $hours = (int)SCHEMA_CHECK_HOURS;
+
+    /* Comprobación rápida: ¿existe ya la tabla de anuncios? Si sí, no hay nada
+     * que hacer y no se toca nada más (una sola consulta, muy barata). */
     try {
         $pdo = db();
-        $pdo->query('SELECT 1');
+        $pdo->query('SELECT 1 FROM ' . t('ad_banners') . ' LIMIT 1');
+        return [];
     } catch (Throwable $e) {
-        return ['bd' => 'No se pudo conectar con la base de datos. Revisa config.php.'];
+        /* Sigue: puede ser que falte la tabla o que no haya conexión. */
     }
 
-    $missing = table_missing();
-    if (!$missing) {
-        try { $pdo->query('SELECT 1 FROM ' . t('ad_banners') . ' LIMIT 1'); } catch (Throwable $e) { $missing = ['ad_banners']; }
+    /* No se reintenta en cada visita: si ya se intentó y falló, se espera. */
+    if (!$force) {
+        $last = (int)update_state_read('schema_checked_at', 0);
+        if ($last > 0 && time() - $last < $hours * 3600) {
+            return (array)update_state_read('schema_issue', []);
+        }
     }
-    if (!$missing) return [];
+    update_state_write(['schema_checked_at' => time(), 'schema_issue' => []]);
 
     try {
-        run_migrations($pdo);
-        /* Comprobación posterior: si sigue faltando, el usuario de MySQL no
-         * tiene permiso para crearla (lo típico en un hosting). */
-        $still = table_missing();
-        try { $pdo->query('SELECT 1 FROM ' . t('ad_banners') . ' LIMIT 1'); } catch (Throwable $e) { $still[] = 'ad_banners'; }
-        if ($still) {
-            return ['db' => 'La base de datos está desfasada: falta la tabla ' . implode(', ', array_unique($still))
-                . '. Pide a tu hosting que te dé permiso para crear tablas, o ejecuta esta consulta en phpMyAdmin:  '
-                . 'CREATE TABLE `' . DB_PREFIX . 'ad_banners` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, `title` VARCHAR(160) NOT NULL, '
-                . '`description` VARCHAR(400) DEFAULT NULL, `image` VARCHAR(255) DEFAULT NULL, `url` VARCHAR(300) NOT NULL, '
-                . '`source` VARCHAR(120) DEFAULT NULL, `active` TINYINT(1) NOT NULL DEFAULT 1, `sort_order` INT NOT NULL DEFAULT 0, '
-                . '`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;'];
+        $pdo = db();
+    } catch (Throwable $e) {
+        return schema_issue('No se pudo conectar con la base de datos. Revisa config.php o pídele a tu hosting que la revise.');
+    }
+
+    /* Solo CREATE TABLE IF NOT EXISTS: barato y sin riesgo de bloquear datos. */
+    try {
+        foreach (schema_tables_sql() as $sql) {
+            $pdo->exec($sql);
         }
     } catch (Throwable $e) {
-        return ['db' => 'No se pudo actualizar la base de datos: ' . $e->getMessage()];
+        return schema_issue('Tu usuario de MySQL no puede crear tablas (no está permitido en este hosting). '
+            . 'Pídeselo a tu hosting o crea tú la tabla en phpMyAdmin:  ' . schema_ad_banners_sql());
     }
-    return $missing;
+
+    /* Comprobación posterior. */
+    try {
+        $pdo->query('SELECT 1 FROM ' . t('ad_banners') . ' LIMIT 1');
+        return [];
+    } catch (Throwable $e) {
+        return schema_issue('La base de datos está desfasada y no se puede arreglar automáticamente. '
+            . 'Crea esta tabla en phpMyAdmin:  ' . schema_ad_banners_sql());
+    }
 }
 
-/* Tablas imprescindibles que aún no existen (idempotente, sin lanzar). */
-function table_missing(): array {
-    $pdo = db();
-    $need = ['ad_banners' => 'Anuncios (banner)', 'payment_methods' => 'Métodos de pago'];
-    $out = [];
-    try {
-        $rows = $pdo->query('SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE()')->fetchAll(PDO::FETCH_COLUMN);
-    } catch (Throwable $e) {
-        return [];
-    }
-    foreach ($need as $tbl => $label) {
-        if (!in_array(t($tbl), $rows, true)) $out[] = $tbl;
-    }
-    return $out;
+/* Guarda el aviso y lo devuelve, para que se muestre en la web. */
+function schema_issue(string $msg): array {
+    update_state_write(['schema_issue' => ['db' => $msg]]);
+    return ['db' => $msg];
+}
+
+/* Sentido de la tabla de anuncios para crear a mano. */
+function schema_ad_banners_sql(): string {
+    return 'CREATE TABLE `' . DB_PREFIX . 'ad_banners` (`id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, '
+        . '`title` VARCHAR(160) NOT NULL, `description` VARCHAR(400) DEFAULT NULL, `image` VARCHAR(255) DEFAULT NULL, '
+        . '`url` VARCHAR(300) NOT NULL, `source` VARCHAR(120) DEFAULT NULL, `active` TINYINT(1) NOT NULL DEFAULT 1, '
+        . '`sort_order` INT NOT NULL DEFAULT 0, `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) '
+        . 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;';
+}
+
+/* Tablas nuevas que puede crear el autoparchado (solo CREATE TABLE IF NOT
+ * EXISTS: nada de ALTER TABLE aquí, para no bloquear la web en cada visita). */
+function schema_tables_sql(): array {
+    return [
+        'CREATE TABLE IF NOT EXISTS ' . t('ad_banners') . ' (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(160) NOT NULL,
+            description VARCHAR(400) DEFAULT NULL,
+            image VARCHAR(255) DEFAULT NULL,
+            url VARCHAR(300) NOT NULL COMMENT "Enlace de destino del anuncio (http/https)",
+            source VARCHAR(120) DEFAULT NULL COMMENT "Origen detectado del anuncio (nombre del sitio)",
+            active TINYINT(1) NOT NULL DEFAULT 1,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+        'CREATE TABLE IF NOT EXISTS ' . t('payment_methods') . ' (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            method_key VARCHAR(30) NOT NULL UNIQUE,
+            label VARCHAR(80) NOT NULL,
+            icon VARCHAR(8) DEFAULT NULL,
+            meta VARCHAR(255) DEFAULT NULL COMMENT "Dato público del método (URL PayPal, teléfono Bizum, IBAN, nota)",
+            is_enabled TINYINT(1) NOT NULL DEFAULT 1,
+            sort_order INT NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+    ];
 }
 
 /* Migraciones de esquema compartidas por install.php y el auto-actualizador.

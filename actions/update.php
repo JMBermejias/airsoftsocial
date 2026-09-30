@@ -106,6 +106,10 @@ if (!$pkg) {
  *      locales, .env o similares y las subidas queden intactas. */
 $root = dirname(__DIR__);
 $omit = ['config.php', 'uploads', '.git'];
+/* Copia atómica: primero a "fichero.new" y luego rename(), que en el mismo
+ * sistema de ficheros es atómico. Así, si la petición se corta a mitad
+ * (tiempo agotado del hosting, 502...), nunca queda un PHP truncado que
+ * deje la web entera en blanco: sigue el fichero viejo o el nuevo, entero. */
 $copyTree = function (string $src, string $dst) use ($omit, &$copyTree): void {
     foreach ((array)@scandir($src) as $it) {
         if ($it === '.' || $it === '..' || in_array($it, $omit, true)) continue;
@@ -116,7 +120,12 @@ $copyTree = function (string $src, string $dst) use ($omit, &$copyTree): void {
             if (!is_dir($d)) @mkdir($d, 0775, true);
             $copyTree($s, $d);
         } else {
-            @copy($s, $d);
+            $tmp = $d . '.new';
+            if (@copy($s, $tmp) && @rename($tmp, $d)) {
+                @chmod($d, 0644);
+            } else {
+                @unlink($tmp);
+            }
         }
     }
 };

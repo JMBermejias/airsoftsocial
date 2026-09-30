@@ -39,6 +39,7 @@ Red social para la comunidad de **airsoft** pensada para alojarse en cualquier *
 config.php     → credenciales de la base de datos
 schema.sql     → esquema de base de datos
 install.php    → instalador guiado (¡borrar después!)
+health.php     → diagnóstico de la instalación (funciona sin base de datos)
 ```
 
 ---
@@ -126,6 +127,28 @@ Cada vez que crees una nueva versión (ver `release.sh`) se generan automáticam
 - Escape de salida con `htmlspecialchars`.
 - Validación de subidas (tipo MIME real + tamaño) y carpeta `uploads/` sin ejecución de código.
 - `config.php`, `includes/` y listados de directorios bloqueados vía `.htaccess`.
+
+---
+
+## 🩺 Si algo no carga: `health.php`
+
+Abre `https://tu-dominio.com/health.php`. Es una página de diagnóstico que **funciona
+incluso sin base de datos ni sesión**, pensado justo para cuando la web no arranca
+(pantalla en blanco, error 500 o **502**). Comprueba y te dice:
+
+- versión de PHP, si hay **cURL**, `allow_url_fopen`, límites de ejecución y memoria;
+- que los archivos esenciales estén y **sin errores de sintaxis** (una subida cortada);
+- permisos de escritura de la app y de `uploads/`;
+- conexión con la base de datos y **qué tablas faltan**;
+- si el servidor puede salir a Internet hacia GitHub.
+
+No muestra datos personales ni tus credenciales, y **puedes borrarla** cuando quieras:
+la app no la necesita. Si detecta algo raro, te dice qué hacer y te da el `CREATE TABLE`
+listo para pegar en phpMyAdmin.
+
+Un **502** casi nunca es un fallo de la app: suele ser que el servidor se queda sin
+memoria o sin tiempo. Si `health.php` está todo en verde y la web sigue sin cargar,
+pide a tu hosting que aumente el límite de memoria y de tiempo de PHP.
 
 ---
 

@@ -6,7 +6,9 @@ verify_csrf();
 /* Si el código llegó antes que la base de datos (subida a mano, actualización
  * fallida), se crea aquí lo que falte. Sin esto el guardado daba un error 500
  * en blanco del que no se puede saber la causa. */
-$issues = ensure_schema();
+/* Forzado: aquí el usuario está intentando guardar, así que se comprueba y
+ * repara aunque el autoparchado normal ya lo intentara hace poco. */
+$issues = ensure_schema(true);
 if (!empty($issues)) {
     $_SESSION['flash'] = ['error', reset($issues)];
     redirect('banner_admin.php');

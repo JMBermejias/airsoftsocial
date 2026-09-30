@@ -41,6 +41,11 @@ define('UPDATE_CHECK_HOURS', 6);
  * con permiso solo de lectura de contenido de este repo. */
 define('GITHUB_TOKEN', '');
 
+/* Cada cuántas horas se comprueba (solo para administradores) si la base de
+ * datos está al día y, si falta alguna tabla, se crea sola. Por defecto 6 h:
+ * no hace falta tocarlo salvo que tu hosting sea muy lento. */
+define('SCHEMA_CHECK_HOURS', 6);
+
 /* ------------------------------------------------------------
  * RANGOS MILITARES (opcional)
  * Los usuarios suben de rango según los días desde su alta. El
