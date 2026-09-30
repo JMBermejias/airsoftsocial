@@ -235,6 +235,10 @@ function verify_csrf(): void {
 const MIME_IMG = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const MIME_VIDEO = ['video/mp4', 'video/webm', 'video/quicktime'];
 const VIDEO_EXT = ['video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/quicktime' => 'mov'];
+/* Tope de longitud de una URL remota que aceptamos descargar o medir. Antes
+ * cada sitio usaba un número distinto (600, 1000) y se acababa rechazando la
+ * misma imagen en un sitio y aceptándola en otro. */
+const REMOTE_URL_MAX = 600;
 
 function upload_file(array $file, string $folder, string $kind = 'image'): array {
     if (empty($file['name']) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -384,6 +388,18 @@ function product_buy_url(array $p): ?string {
     return $u;
 }
 
+/* Tope de tamaño legible para los mensajes de error: 4194304 -> "4 MB".
+ * Con round() a secas, un tope por debajo de medio megabyte salía como "0 MB",
+ * que no dice nada. */
+function human_bytes(int $n): string {
+    if ($n >= 1048576) {
+        $mb = $n / 1048576;
+        return (abs($mb - round($mb)) < 0.05 ? (int)round($mb) : round($mb, 1)) . ' MB';
+    }
+    if ($n >= 1024) return max(1, (int)round($n / 1024)) . ' KB';
+    return $n . ' B';
+}
+
 /* ---------- Peticiones HTTP salientes ----------
  * En hosting compartido es muy habitual que allow_url_fopen esté DESACTIVADO
  * (entonces file_get_contents con una URL no funciona) o que falte la extensión
@@ -411,14 +427,16 @@ function http_request(string $url, array $opt = []): array {
     /* 1) cURL: funciona aunque allow_url_fopen esté desactivado. */
     if (function_exists('curl_init')) {
         $out['via'] = 'curl';
-        $attempt = function (bool $verify) use ($url, $method, $timeout, $follow, $ua, $toFile, $headers) {
+        $aborted = false;
+        $attempt = function (bool $verify) use ($url, $method, $timeout, $follow, $ua, $toFile, $headers, $max, &$aborted) {
+            $aborted = false;
             $hdr = [];
             $fh  = null;
             if ($toFile !== '' && ($fh = @fopen($toFile, 'wb')) === false) {
                 return ['res' => false, 'err' => 'No se pudo escribir en ' . $toFile, 'code' => 0, 'hdr' => [], 'size' => 0];
             }
             $ch = curl_init($url);
-            curl_setopt_array($ch, [
+            $set = [
                 CURLOPT_RETURNTRANSFER => $fh === null,
                 CURLOPT_FOLLOWLOCATION => $follow,
                 CURLOPT_MAXREDIRS       => 5,
@@ -433,7 +451,22 @@ function http_request(string $url, array $opt = []): array {
                     if ($p !== false) $hdr[strtolower(trim(substr($line, 0, $p)))][] = trim(substr($line, $p + 1));
                     return strlen($line);
                 },
-            ]);
+            ];
+            /* El tope de tamaño tiene que cortar la descarga EN MARCHA. Con
+             * CURLOPT_FILE el cuerpo entero aterriza en disco, así que medir
+             * después solo sirve para borrar: un fichero enorme llegaría a
+             * llenar el disco temporal del hosting. MAXFILESIZE aborta si el
+             * servidor manda Content-Length, y la función de progreso cubre
+             * el caso de que no lo mande (transferencias por chunk). */
+            if ($max > 0) {
+                $set[CURLOPT_MAXFILESIZE]      = $max;
+                $set[CURLOPT_NOPROGRESS]       = false;
+                $set[CURLOPT_PROGRESSFUNCTION] = function ($c, $dlSize, $dlNow, $ulSize, $ulNow) use ($max, &$aborted) {
+                    if ($dlNow > $max) { $aborted = true; return 1; } /* != 0 aborta */
+                    return 0;
+                };
+            }
+            curl_setopt_array($ch, $set);
             if ($fh !== null) curl_setopt($ch, CURLOPT_FILE, $fh);
             $res  = curl_exec($ch);
             $err  = (string)curl_error($ch);
@@ -445,18 +478,26 @@ function http_request(string $url, array $opt = []): array {
 
         $r = $attempt(true);
         /* CA antigua en el hosting: si el certificado no valida, se reintenta
-         * sin verificación (solo se habla con GitHub) y se avisa en la web. */
-        if ($r['err'] !== '' && preg_match('/certificate|ssl|ca cert|issuer/i', $r['err'])) {
+         * sin verificación y se avisa en la web. */
+        if ($r['err'] !== '' && !$aborted && preg_match('/certificate|ssl|ca cert|issuer/i', $r['err'])) {
             $r2 = $attempt(false);
             if ($r2['err'] === '') {
                 $r = $r2;
-                $out['warning'] = 'Tu hosting no tiene los certificados de una CA actual: se aceptó la conexión con GitHub sin verificarlos.';
+                $out['warning'] = 'Tu hosting no tiene los certificados de una CA actual: se aceptó la conexión sin verificarlos.';
             }
         }
 
         $out['code']    = (int)$r['code'];
         $out['headers'] = $r['hdr'];
         $out['body']    = is_string($r['res']) ? $r['res'] : '';
+        /* Si la descarga se paró a mitad porque superaba el tope, el motivo
+         * real es el tamaño, no el error interno de cURL. */
+        if ($aborted) {
+            @unlink($toFile);
+            $out['error'] = 'El archivo descargado supera el tamaño máximo permitido ('
+                . human_bytes($max) . ').';
+            return $out;
+        }
         if ($r['err'] !== '') {
             $out['error'] = 'cURL: ' . $r['err'];
             return $out;
@@ -465,17 +506,18 @@ function http_request(string $url, array $opt = []): array {
             $size = is_file($toFile) ? (int)filesize($toFile) : 0;
             if ($max > 0 && $size > $max) {
                 @unlink($toFile);
-                $out['error'] = 'El paquete descargado supera el tamaño máximo permitido (' . (int)round($max / 1048576) . ' MB).';
+                $out['error'] = 'El archivo descargado supera el tamaño máximo permitido ('
+                    . human_bytes($max) . ').';
                 return $out;
             }
             if ($size === 0) {
                 @unlink($toFile);
-                $out['error'] = 'GitHub devolvió el paquete vacío (código HTTP ' . $out['code'] . ').';
+                $out['error'] = 'El servidor remoto devolvió el archivo vacío (código HTTP ' . $out['code'] . ').';
                 return $out;
             }
         }
         if ($out['code'] >= 400) {
-            $out['error'] = 'GitHub respondió con el código HTTP ' . $out['code'] . '.';
+            $out['error'] = 'El servidor remoto respondió con el código HTTP ' . $out['code'] . '.';
         }
         return $out;
     }
@@ -528,7 +570,8 @@ function http_request(string $url, array $opt = []): array {
             fclose($fp);
             if ($fh !== null) fclose($fh);
             @unlink($toFile);
-            $out['error'] = 'El paquete descargado supera el tamaño máximo permitido (' . (int)round($max / 1048576) . ' MB).';
+            $out['error'] = 'El archivo descargado supera el tamaño máximo permitido ('
+                . human_bytes($max) . ').';
             return $out;
         }
         if ($fh !== null) fwrite($fh, $chunk);
@@ -539,7 +582,7 @@ function http_request(string $url, array $opt = []): array {
         fclose($fh);
         if (!is_file($toFile) || filesize($toFile) === 0) {
             @unlink($toFile);
-            $out['error'] = 'GitHub devolvió el paquete vacío (código HTTP ' . $out['code'] . ').';
+            $out['error'] = 'El servidor remoto devolvió el archivo vacío (código HTTP ' . $out['code'] . ').';
             return $out;
         }
     } else {
@@ -547,7 +590,7 @@ function http_request(string $url, array $opt = []): array {
     }
     if ($out['code'] >= 400) {
         @unlink($toFile);
-        $out['error'] = 'GitHub respondió con el código HTTP ' . $out['code'] . '.';
+        $out['error'] = 'El servidor remoto respondió con el código HTTP ' . $out['code'] . '.';
     }
     return $out;
 }
@@ -616,40 +659,108 @@ function fetch_product_meta(string $url): array {
     return $out;
 }
 
-/* Descarga una imagen remota dentro de uploads/ y devuelve la ruta local, o null. */
-function save_remote_image(string $url, string $folder): ?string {
-    if (!preg_match('#^https?://#i', $url)) return null;
-    $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS => 3,
-        CURLOPT_CONNECTTIMEOUT => 8,
-        CURLOPT_TIMEOUT => 25,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_USERAGENT => $ua,
+/* Descarga una imagen remota a uploads/<folder>.
+ *
+ * IMPORTANTE: usa http_request() y no cURL directamente. Antes lo usaba y en
+ * los hostings sin la extensión cURL (o con cURL roto) eso era un error fatal
+ * en blanco: la imagen no se importaba nunca. http_request() cae a los flujos
+ * de PHP si no hay cURL, reintenta si el certificado está caducado y corta la
+ * descarga en marcha si supera el tope. $referer se envía porque muchas webs
+ * (Amazon, medios, CDNs) no sirven sus imágenes si la petición no parece venir
+ * de su propia página.
+ *
+ * A diferencia de la antigua versión, que devolvía solo la ruta y se tragaba
+ * el motivo del fallo, DEVUELVE EL PORQUÉ. Sin eso el administrador solo veía
+ * un genérico «no se ha podido descargar» y no podía distinguir un 403 de un
+ * certificado caducado o de un fichero de 9 MB. Misma forma que upload_file():
+ * ['ok', 'path', 'error', 'warning'].
+ *
+ * $opt: min_w y min_h (px) rechazan la imagen ANTES de guardarla, para no
+ * dejar en uploads/ un favicon de 32x32 que luego resulta inútil. */
+function save_remote_image(string $url, string $folder, string $referer = '', array $opt = []): array {
+    $no = ['ok' => false, 'path' => '', 'error' => '', 'warning' => '', 'too_small' => false];
+
+    $url = trim($url);
+    if ($url === '' || !preg_match('#^https?://#i', $url)) {
+        $no['error'] = 'La dirección de la imagen no es válida.';
+        return $no;
+    }
+    if (strlen($url) > REMOTE_URL_MAX) {
+        $no['error'] = 'La dirección de la imagen es demasiado larga.';
+        return $no;
+    }
+
+    $minW = max(0, (int)($opt['min_w'] ?? 0));
+    $minH = max(0, (int)($opt['min_h'] ?? 0));
+
+    $headers = ['Accept: image/webp,image/apng,image/png,image/jpeg,image/gif,*/*;q=0.8'];
+    if ($referer !== '') $headers[] = 'Referer: ' . $referer;
+
+    $tmp = tempnam(sys_get_temp_dir(), 'imgdl');
+    if ($tmp === false) {
+        $no['error'] = 'No se pudo crear el fichero temporal para descargar la imagen.';
+        return $no;
+    }
+
+    $r = http_request($url, [
+        'to_file'   => $tmp,
+        'timeout'   => 20,
+        'max_bytes' => 4194304,   /* 4 MB: de sobra para un banner */
+        'follow'    => true,
+        'user_agent'=> 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'headers'   => $headers,
     ]);
-    $data = curl_exec($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    if (PHP_VERSION_ID < 80000) curl_close($ch);
-    if ($data === false || $code !== 200 || $data === '') return null;
 
-    $tmp = tempnam(sys_get_temp_dir(), 'prodimg');
-    if ($tmp === false) return null;
-    file_put_contents($tmp, $data);
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mime = finfo_file($finfo, $tmp);
-    if (PHP_VERSION_ID < 80000) finfo_close($finfo);
-    if (!in_array($mime, MIME_IMG, true)) { @unlink($tmp); return null; }
+    /* Motivo real del fallo, en orden de utilidad para el administrador. */
+    if ($r['error'] !== '') {
+        @unlink($tmp);
+        $no['error']   = $r['error'];
+        $no['warning'] = $r['warning'];
+        return $no;
+    }
+    if ((int)$r['code'] !== 200) {
+        @unlink($tmp);
+        $no['error'] = 'El servidor remoto respondió con el código HTTP ' . (int)$r['code'] . '.';
+        return $no;
+    }
+    if (!is_file($tmp) || (int)filesize($tmp) < 64) {
+        @unlink($tmp);
+        $no['error'] = 'El servidor remoto devolvió un archivo vacío o demasiado pequeño.';
+        return $no;
+    }
 
-    $ext = str_replace('image/', '', $mime);
-    if ($ext === 'svg+xml') $ext = 'svg';
-    $name = bin2hex(random_bytes(8)) . '.' . $ext;
+    $finfo = @finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = $finfo ? (string)@finfo_file($finfo, $tmp) : '';
+    if ($finfo && PHP_VERSION_ID < 80000) finfo_close($finfo);
+    $info = @getimagesize($tmp);
+    if (!in_array($mime, MIME_IMG, true) || !$info) {
+        @unlink($tmp);
+        $no['error'] = 'Lo que hay en esa dirección no es una imagen válida ('
+            . ($mime !== '' ? $mime : 'tipo desconocido') . ').';
+        return $no;
+    }
+
+    /* Tamaño comprobado ANTES de escribir nada en uploads/. */
+    $w = (int)$info[0];
+    $h = (int)$info[1];
+    if ($minW > 0 || $minH > 0) {
+        if ($w < $minW || $h < $minH) {
+            @unlink($tmp);
+            $no['error']     = 'Esa imagen es de ' . $w . ' × ' . $h . ' px y es demasiado pequeña.';
+            $no['too_small'] = true;
+            return $no;
+        }
+    }
+
+    $name = bin2hex(random_bytes(8)) . '.' . str_replace('image/', '', $mime);
     $base = dirname(__DIR__) . '/uploads/' . $folder;
-    if (!is_dir($base)) mkdir($base, 0775, true);
-    if (!rename($tmp, $base . '/' . $name)) { @unlink($tmp); return null; }
-    return 'uploads/' . $folder . '/' . $name;
+    if (!is_dir($base)) @mkdir($base, 0775, true);
+    if (!@rename($tmp, $base . '/' . $name)) {
+        @unlink($tmp);
+        $no['error'] = 'No se pudo guardar la imagen. Comprueba los permisos de la carpeta uploads/';
+        return $no;
+    }
+    return ['ok' => true, 'path' => 'uploads/' . $folder . '/' . $name, 'error' => '', 'warning' => $r['warning'], 'too_small' => false];
 }
 
 /* ---------- Banner de publicidad ----------
@@ -734,19 +845,30 @@ function clean_page_title(string $title): string {
 /* Convierte una URL relativa del HTML en absoluta usando el enlace de origen. */
 function absolute_url(string $src, string $base): string {
     $src = trim($src);
-    if ($src === '' || preg_match('#^(https?:)?//#i', $src)) return $src;
+    if ($src === '') return '';
+    /* Una imagen metida en la página como "data:..." no se puede descargar ni
+     * guardar: se descarta para no dejar un banner roto. */
+    if (preg_match('#^data:#i', $src)) return '';
+    if (preg_match('#^https?://#i', $src)) return $src;
+
     $p = @parse_url($base);
-    if (!$p || empty($p['host'])) return $src;
-    $scheme = $p['scheme'] ?? 'https';
+    $scheme = (is_array($p) && !empty($p['scheme'])) ? $p['scheme'] : 'https';
+    /* "//cdn.ejemplo.com/img.png": hay que añadirle el esquema o la descarga
+     * falla (esto pasaba con muchas webs y hacía que no se importara la imagen). */
+    if (strpos($src, '//') === 0) return $scheme . ':' . $src;
+
+    if (!$p || empty($p['host'])) return '';
     if (strpos($src, '/') === 0) return $scheme . '://' . $p['host'] . $src;
     $dir = rtrim(dirname($p['path'] ?? '/'), '/');
     return $scheme . '://' . $p['host'] . $dir . '/' . $src;
 }
 
 /* Lee el banner de una URL: título, descripción, imagen y ORIGEN de donde viene.
- * Devuelve ['title','description','image','source','warning','error']. */
+ * Devuelve ['title','description','image','image_kind','source','warning','error'].
+ * image_kind dice de dónde salió la imagen ('og', 'apple' o 'favicon') para que
+ * quien la usa pueda descartar un icono de 32x32. */
 function fetch_banner_meta(string $url): array {
-    $out = ['title' => '', 'description' => '', 'image' => '', 'source' => '', 'warning' => '', 'error' => ''];
+    $out = ['title' => '', 'description' => '', 'image' => '', 'image_kind' => '', 'source' => '', 'warning' => '', 'error' => ''];
 
     $host = (string)@parse_url($url, PHP_URL_HOST);
     $out['source'] = known_site_name($host) ?: $host;
@@ -756,6 +878,7 @@ function fetch_banner_meta(string $url): array {
     if ($yt !== null) {
         $out['source'] = 'YouTube';
         $out['image'] = 'https://i.ytimg.com/vi/' . $yt . '/hqdefault.jpg';
+        $out['image_kind'] = 'og';
         $out['title'] = 'Vídeo en YouTube';
     }
 
@@ -781,15 +904,24 @@ function fetch_banner_meta(string $url): array {
     $desc = meta_content($html, 'og:description') ?: meta_content($html, 'description') ?: meta_content($html, 'twitter:description');
     $out['description'] = $desc !== '' ? trim(preg_replace('/\s+/u', ' ', $desc)) : '';
 
-    /* Imagen: la de OpenGraph, si no la de Twitter, si no el icono de Apple, si no el favicon. */
+    /* Imagen: la de OpenGraph, si no la de Twitter, si no el icono de Apple, si no
+     * el favicon. Se marca de dónde salió (image_kind) porque el favicon es un
+     * icono de 32x32: en un banner de 728x90 se ve fatal, así que quien lo usa
+     * lo descarta y avisa de que suba él una imagen. */
+    $kind = '';
     $img = meta_content($html, 'og:image') ?: meta_content($html, 'twitter:image');
+    if ($img !== '') $kind = 'og';
+    if ($img === '' && preg_match('~<link[^>]+rel="[^"]*image_src[^"]*"[^>]+href="([^"]+)"~i', $html, $m)) {
+        $img = trim($m[1]); $kind = 'og';
+    }
     if ($img === '' && preg_match('~<link[^>]+rel="[^"]*apple-touch-icon[^"]*"[^>]+href="([^"]+)"~i', $html, $m)) {
-        $img = trim($m[1]);
+        $img = trim($m[1]); $kind = 'apple';
     }
     if ($img === '' && $host !== '' && $yt === null) {
-        $img = 'https://' . $host . '/favicon.ico';
+        $img = 'https://' . $host . '/favicon.ico'; $kind = 'favicon';
     }
     $out['image'] = $img !== '' ? absolute_url($img, $url) : $out['image'];
+    $out['image_kind'] = $kind;
 
     $site = meta_content($html, 'og:site_name');
     if ($site !== '') $out['source'] = clean_page_title($site);
@@ -856,7 +988,7 @@ function banner_image_size(string $img): array {
  * lo justo (1 MB) si es remota. Nunca lanza errores. */
 function measure_image_size(string $img): array {
     $img = trim($img);
-    if ($img === '' || strlen($img) > 600) return [0, 0];
+    if ($img === '' || strlen($img) > REMOTE_URL_MAX) return [0, 0];
 
     if (strpos($img, 'http') !== 0) {
         /* Imagen subida por el admin: está en uploads/. */

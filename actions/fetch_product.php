@@ -18,10 +18,21 @@ if (isset($meta['error'])) {
     exit;
 }
 
-/* Intentamos guardar la imagen en local (más fiable que enlazar el CDN de la tienda). */
+/* Intentamos guardar la imagen en local (más fiable que enlazar el CDN de la tienda).
+ * Se pasa la URL del producto como Referer: Amazon y muchos CDNs no sirven sus
+ * imágenes si la petición no parece venir de su propia página. */
 $image = null;
+$nota  = '';
 if ($meta['image'] !== '') {
-    $image = save_remote_image($meta['image'], 'products');
+    $dl = save_remote_image($meta['image'], 'products', $url);
+    if ($dl['ok']) {
+        $image = $dl['path'];
+    } else {
+        /* Se enlaza la original y se explica el motivo, por si hay que
+         * subirla a mano. */
+        $image = $meta['image'];
+        $nota  = $dl['error'] . ' La imagen se ha enlazado desde su web original.';
+    }
 }
 
 echo json_encode([
@@ -30,4 +41,5 @@ echo json_encode([
     'price' => $meta['price'],
     'description' => $meta['description'],
     'image' => $image,
+    'warning' => trim($nota),
 ]);

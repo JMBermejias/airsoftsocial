@@ -20,3 +20,9 @@ dist/
 *.deb
 *.apk
 *.aab
+
+# Andamiaje de pruebas local (mide anchos del banner cargando iframes).
+# medirlog.php escribía en un fichero lo que le mandase el GET sin autenticar:
+# nunca debe subirse a un hosting.
+/medir*.php
+/medir*.html

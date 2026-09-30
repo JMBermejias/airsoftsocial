@@ -83,7 +83,11 @@ require_once __DIR__ . '/includes/header.php';
             if (d.description && desc) desc.value = d.description;
             var imp = document.getElementById('image-imported');
             if (d.image && imp) imp.value = d.image;
-            status.textContent = 'Datos cargados. Revisa y pulsa Guardar.';
+            /* Si la imagen no se pudo guardar, el motivo viene en 'warning'
+             * (código HTTP, certificado, tamaño…) y hay que enseñarlo: si no,
+             * el administrador ve «Datos cargados» y cree que todo fue bien. */
+            status.textContent = d.warning
+              || 'Datos cargados. Revisa y pulsa Guardar.';
           })
           .catch(function(){ btn.disabled = false; status.textContent = 'Error de red. Inténtalo de nuevo.'; });
       });
