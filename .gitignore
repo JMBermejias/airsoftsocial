@@ -26,3 +26,6 @@ dist/
 # nunca debe subirse a un hosting.
 /medir*.php
 /medir*.html
+
+# Diagnóstico temporal del login: NO subir (muestra correos de usuarios)
+/diag_login.php

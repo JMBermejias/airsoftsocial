@@ -112,6 +112,20 @@ function find_user_by_login(string $id): ?array {
     $u = $stmt->fetch();
     if ($u) return $u;
 
+    /* AL REGISTRARSE se borran del nombre los puntos, guiones y espacios: si
+     * escribiste «jose.perez» o «jose-perez» se quedó guardado «joseperez».
+     * Con la búsqueda de arriba no lo encuentra, pero la persona sí recuerda
+     * el nombre que escribió, así que se busca también en esa forma "limpia".
+     * Es la causa más habitual de «me dice que no hay ninguna cuenta» cuando la
+     * cuenta sí existe. */
+    $plain = preg_replace('/[^A-Za-z0-9_]/', '', $id);
+    if ($plain !== '' && $plain !== $id) {
+        $s2 = db()->prepare('SELECT * FROM ' . t('users') . ' WHERE username = ? LIMIT 1');
+        $s2->execute([$plain]);
+        $u = $s2->fetch();
+        if ($u) return $u;
+    }
+
     /* Alguien que escribe «nombre@» sin el dominio, o «@dominio.com»
      * se queda sin nombre: se prueba con lo que haya antes del arroba. */
     if (strpos($id, '@') !== false) {

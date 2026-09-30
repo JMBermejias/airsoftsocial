@@ -23,6 +23,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $u
             ? 'La contraseña no es correcta. Si no la recuerdas, pídele a un administrador que te la cambie.'
             : 'No hay ninguna cuenta con «' . $id . '». Entra con tu nombre de usuario o con tu correo electrónico.';
+
+        /* Si el nombre sin limpiar no coincide con nadie, se prueba con la
+         * forma "limpia" (sin puntos ni guiones) por si esa es la que se
+         * escribió al registrarse. Si aparece, se dice cuál es el nombre real:
+         * así se entra y además la persona aprende cómo se guardó. */
+        if (!$u) {
+            $plain = preg_replace('/[^A-Za-z0-9_]/', '', $id);
+            if ($plain !== '' && $plain !== $id) {
+                $s = db()->prepare('SELECT username FROM ' . t('users') . ' WHERE username = ? LIMIT 1');
+                $s->execute([$plain]);
+                if ($s->fetch()) {
+                    $error = 'El usuario se guardó como «' . $plain . '» (los puntos y guiones se quitan al registrarse). '
+                           . 'Entra con ese nombre, con tu correo, o con «' . $id . '» a partir de ahora.';
+                }
+            }
+        }
     } else {
         $username = preg_replace('/[^A-Za-z0-9_]/', '', trim($_POST['username'] ?? ''));
         $email = trim($_POST['email'] ?? '');
@@ -76,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= e(APP_NAME) ?> · Iniciar sesión</title>
-<link rel="stylesheet" href="assets/css/style.css?v=16">
+<link rel="stylesheet" href="assets/css/style.css?v=17">
 </head>
 <body class="auth-body">
 <div class="auth-wrap">
