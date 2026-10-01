@@ -62,7 +62,7 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 <?php if ($flash): ?><div class="alert <?= $flash[0] === 'ok' ? 'ok' : 'error' ?>"><?= e($flash[1]) ?></div><?php endif; ?>
 
-<form method="post" enctype="multipart/form-data" class="card" style="max-width:720px">
+<form method="post" enctype="multipart/form-data" class="card form-main">
   <?= csrf_field() ?>
   <div class="avatar-edit">
     <img class="avatar xl" id="avatar-preview" src="<?= avatar_src($me['avatar']) ?>" alt="avatar">

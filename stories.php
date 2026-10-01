@@ -12,7 +12,7 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 <?php if ($flash): ?><div class="alert <?= $flash[0] === 'ok' ? 'ok' : 'error' ?>"><?= e($flash[1]) ?></div><?php endif; ?>
 
-<section class="card" style="max-width:640px">
+<section class="card form-main">
   <h3>Crea una historia</h3>
   <p class="muted">Las historias son <strong>permanentes</strong> y solo las ven tus <strong>amigos añadidos</strong>. Marca la casilla «24 h» si quieres que desaparezca automáticamente al pasar un día.</p>
   <form action="actions/story.php" method="post" enctype="multipart/form-data">

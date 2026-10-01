@@ -276,7 +276,7 @@ textarea{resize:vertical}
 .story-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .story-top .avatar{width:40px;height:40px}
 #sv-user{font-weight:700;color:#fff}
-.story-text{font-size:16px;color:var(--text);margin:12px 0}
+.story-text{font-size:16px;color:var(--text);margin:12px 0;text-align:justify;hyphens:auto}
 .story-img{max-height:52vh;border-radius:10px;border:1px solid var(--line)}
 .story-close{
   position:absolute;top:26px;right:34px;background:none;border:none;color:#fff;
@@ -293,6 +293,13 @@ textarea{resize:vertical}
 .composer-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .tags-input{flex:1;min-width:160px;margin:0!important}
 .feed-list{display:flex;flex-direction:column;gap:16px}
+
+/* Formularios de la página principal (publicar, buscar campos, editar perfil…)
+ * con el MISMO ancho que el área de trabajo y centrados en ella, para que no
+ * se vean más estrechos o descentrados respecto a las publicaciones.
+ * Antes cada uno llevaba su propio ancho en línea (720, 760, 640…), así que
+ * ninguno coincidía con los 820 px del muro y quedaban descentrados. */
+.composer,.composer form,.form-main{max-width:var(--work-w);margin-left:auto;margin-right:auto}
 .post{border:1px solid var(--line)}
 .post.general{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),var(--shadow)}
 .post-banner{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#241a08;font-weight:800;font-size:12px;text-transform:uppercase;padding:4px 10px;border-radius:6px;margin-bottom:10px;letter-spacing:.5px}
@@ -304,7 +311,10 @@ textarea{resize:vertical}
 .post-time{color:var(--muted);font-size:12px}
 .post-del button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px}
 .post-del button:hover{color:var(--danger)}
-.post-body{margin:10px 0 8px;font-size:15px;white-space:pre-wrap;overflow-wrap:break-word}
+/* Texto justificado, como el resto del muro. Sin white-space:pre-wrap porque el
+ * PHP ya mete los saltos con nl2br(): con las dos cosas a la vez, cada salto
+ * del texto salía duplicado (una vez el <br> y otra el \n). */
+.post-body{margin:10px 0 8px;font-size:15px;overflow-wrap:break-word;text-align:justify;hyphens:auto}
 .post-file img{max-height:420px;border-radius:10px;border:1px solid var(--line);width:100%;object-fit:cover}
 .pdf-link{display:inline-block;background:rgba(201,79,61,.15);color:#e08577;padding:10px 16px;border-radius:8px;font-weight:700}
 .post-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}

@@ -61,7 +61,7 @@ require_once __DIR__ . '/includes/header.php';
 <?php if ($flash): ?><div class="alert <?= $flash[0] === 'ok' ? 'ok' : 'error' ?>"><?= e($flash[1]) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert error"><?= e($error) ?></div><?php endif; ?>
 
-<form method="post" enctype="multipart/form-data" class="card" style="max-width:760px">
+<form method="post" enctype="multipart/form-data" class="card form-main">
   <?= csrf_field() ?>
   <div class="form-row">
     <label>Nombre del campo *

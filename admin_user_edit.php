@@ -25,7 +25,7 @@ require_once __DIR__ . '/includes/header.php';
   <a class="btn btn-ghost" href="admin.php">← Volver al panel</a>
 </div>
 
-<section class="card" style="max-width:640px">
+<section class="card form-main">
   <h3>Editar usuario <span class="muted">(<?= e($user['username']) ?>)</span></h3>
   <p class="muted"><?= rank_badge($user) ?> · <?= days_registered($user) ?> días de antigüedad · alta el <?= date('d/m/Y', strtotime($user['created_at'])) ?></p>
 
