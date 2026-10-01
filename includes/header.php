@@ -36,10 +36,11 @@ $schemaIssues = ensure_schema();
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?= e(APP_NAME) ?>">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.php">
 <!-- El favicon.ico va primero a propósito: el navegador y el instalador de
      Android lo piden antes de mirar el manifest, y si no existe sale un icono
      genérico en vez del logo. -->
+<link rel="icon" type="image/png" sizes="192x192" href="icon.php?src=icon-192.png">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="assets/img/icons/icon-512.png">

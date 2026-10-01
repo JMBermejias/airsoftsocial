@@ -28,6 +28,8 @@ $ico512   = __DIR__ . '/assets/img/icons/icon-512.png';
 $icoMask  = __DIR__ . '/assets/img/icons/icon-maskable.png';
 
 $files = [
+    'manifest.php'              => __DIR__ . '/manifest.php',
+    'icon.php'                  => __DIR__ . '/icon.php',
     'manifest.webmanifest'      => $mfFile,
     'favicon.ico'               => $icoFile,
     'assets/img/icons/icon-192.png' => $ico192,
@@ -44,8 +46,9 @@ $e = static fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Diagnóstico PWA · <?= e(APP_NAME) ?></title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon.php?src=icon-192.png">
 <link rel="icon" href="favicon.ico" sizes="any">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.php">
 <link rel="stylesheet" href="assets/css/style.css?v=<?= e(str_replace('.', '', app_version())) ?>">
 <style>
   .chk{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--bg-soft);font-size:14px}
@@ -93,12 +96,21 @@ $e = static fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
           $mfErr = json_last_error_msg();
       } else {
           foreach (($j['icons'] ?? []) as $i) {
-              $rel = preg_replace('#^\./#', '', (string)($i['src'] ?? ''));
+              $src = (string)($i['src'] ?? '');
+              /* Los iconos se sirven por icon.php?src=fichero.png. Ese src es
+                 un nombre suelto: el fichero real vive en
+                 assets/img/icons/, que es donde icon.php lo busca. */
+              $rel = preg_replace('#^\./#', '', $src);
+              $file = $rel;
+              if (str_contains($rel, '?')) {
+                  parse_str((string)explode('?', $rel, 2)[1], $q);
+                  if (!empty($q['src'])) $file = 'assets/img/icons/' . basename((string)$q['src']);
+              }
               $mfIcons[] = [
-                  'src'    => (string)($i['src'] ?? '?'),
+                  'src'    => $src,
                   'sizes'  => (string)($i['sizes'] ?? '?'),
                   'purpose'=> (string)($i['purpose'] ?? '?'),
-                  'existe' => is_file(__DIR__ . '/' . $rel),
+                  'existe' => is_file(__DIR__ . '/' . $file),
               ];
           }
       }
@@ -153,10 +165,19 @@ $e = static fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
     <b>Resultado en este navegador</b>
     <div class="live-line" id="r-sw">service worker: comprobando…</div>
     <div class="live-line" id="r-https">HTTPS: comprobando…</div>
+    <div class="live-line" id="r-sw">service worker: comprobando…</div>
     <div class="live-line" id="r-mf">manifest: comprobando…</div>
+    <div class="live-line" id="r-mime">tipo MIME del manifest: comprobando…</div>
     <div class="live-line" id="r-icons">iconos: comprobando…</div>
     <div class="live-line" id="r-verdict">veredicto: comprobando…</div>
   </div>
+
+  <p class="muted" style="font-size:12px;margin-top:8px">
+    <strong style="color:var(--text)">Lo importante:</strong> la línea del tipo MIME tiene que
+    decir <code>application/manifest+json</code>. Si dice otra cosa (por ejemplo
+    <code>text/plain</code>), el navegador descarta el manifest entero: por eso no hay ni icono
+    ni opción de instalar, solo «crear acceso directo».
+  </p>
 
   <h2 style="color:var(--lime);font-size:15px;margin-top:20px">Cómo se pone el icono</h2>
   <div class="card">
@@ -210,7 +231,12 @@ $e = static fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
     fetch(link.href, { cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
-        out('r-mf', 'carga bien (' + r.status + ', tipo ' + (r.headers.get('content-type') || '?') + ')', true);
+        out('r-mf', 'carga bien (HTTP ' + r.status + ')', true);
+        /* El tipo MIME es LA causa típica de que no haya icono: si no es
+           application/manifest+json, el navegador descarta el manifest entero. */
+        var ct = (r.headers.get('content-type') || '').split(';')[0].trim();
+        var mimeOk = (ct === 'application/manifest+json');
+        out('r-mime', ct || '(sin tipo)', mimeOk);
         return r.json();
       })
       .then(function (j) {
@@ -238,17 +264,21 @@ $e = static fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
   function veredicto() {
     var https = isHttps;
     var swOk = !!navigator.serviceWorker.controller;
+    var green = 'rgb(168, 216, 79)';
     var mfEl = document.getElementById('r-mf');
-    var mfOk = mfEl && mfEl.style.color === 'rgb(168, 216, 79)';
+    var mfOk = mfEl && mfEl.style.color === green;
+    var mimeEl = document.getElementById('r-mime');
+    var mimeOk = mimeEl && mimeEl.style.color === green;
     var icEl = document.getElementById('r-icons');
-    var icOk = icEl && icEl.style.color === 'rgb(168, 216, 79)';
+    var icOk = icEl && icEl.style.color === green;
     var v;
-    if (!https)      v = 'SIN HTTPS: el icono no saldrá hasta que actives el SSL en el hosting.';
-    else if (!swOk) v = 'HTTPS correcto pero el service worker no está activo: recarga la página un par de veces.';
-    else if (!mfOk) v = 'HTTPS y service worker correctos, pero el manifest no carga: revisa el .htaccess (AddType webmanifest).';
-    else if (!icOk) v = 'Todo correcto salvo los iconos: revisa que los PNG estén subido al servidor.';
-    else            v = 'Todo correcto. Si el icono sigue sin salir, borra los datos del sitio en el móvil y reinstala.';
-    out('r-verdict', v, https && swOk && mfOk && icOk);
+    if (!https)       v = 'SIN HTTPS: el icono no saldrá hasta que actives el SSL en el hosting.';
+    else if (!swOk)   v = 'HTTPS correcto pero el service worker no está activo: recarga la página un par de veces.';
+    else if (!mimeOk) v = 'ESTE ES EL PROBLEMA: el manifest no llega con el tipo correcto, así que el navegador lo descarta entero. Mira la línea de arriba.';
+    else if (!mfOk)   v = 'El manifest carga pero no se puede leer como JSON. Revisa manifest.php.';
+    else if (!icOk)   v = 'Manifest correcto pero algún icono no se descarga. Mira la lista de arriba.';
+    else              v = 'Todo correcto. Si el icono sigue sin salir, borra los datos del sitio desde los ajustes del navegador y reinstala.';
+    out('r-verdict', v, https && swOk && mimeOk && mfOk && icOk);
   }
   setTimeout(veredicto, 2500);
 })();

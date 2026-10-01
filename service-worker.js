@@ -8,11 +8,10 @@
  *   pasan directamente a la red.
  * Bump CACHE al hacer cambios en plantillas o assets para invalidar.
  */
-const CACHE = 'airsoftsocial-v26';
+const CACHE = 'airsoftsocial-v28';
 const ASSET_RE = /\.(css|js|png|jpe?g|gif|webp|svg|ico|webmanifest|woff2?|pdf)$/;
 const SHELL = [
   './',
-  './manifest.webmanifest',
   './favicon.ico',
   './assets/css/style.css',
   './assets/js/app.js',
@@ -22,6 +21,12 @@ const SHELL = [
   './assets/img/icons/icon-512.png',
   './assets/img/icons/icon-maskable.png'
 ];
+
+/* El manifest y los iconos NO se cachean nunca. Van siempre a la red, porque
+   el instalador de Android los lee al instalar y, si los sirviera de caché,
+   seguiría poniendo el icono viejo para siempre. Además el manifest se pide
+   por manifest.php y los iconos por icon.php, así que no entran ni por ASSET_RE. */
+const ALWAYS_NETWORK_RE = /(\/manifest\.php|\/icon\.php|\/manifest\.webmanifest|\/favicon\.ico)$/;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -46,10 +51,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // El manifest y el favicon van siempre a la red: si se sirven de caché, el
-  // instalador de Android sigue viendo el icono viejo (o ninguno) y no hay
-  // forma de forzar la actualización desde el navegador.
-  if (/\.(webmanifest|ico)$/.test(url.pathname)) {
+  // El manifest y los iconos van siempre a la red (ver ALWAYS_NETWORK_RE).
+  // Se comprueba el pathname sin query, porque icon.php llega con ?src=...
+  if (ALWAYS_NETWORK_RE.test(url.pathname)) {
     event.respondWith(networkFirst(req));
     return;
   }
@@ -96,4 +100,4 @@ async function networkFirst(req) {
     });
   }
 }
-/* rev=1790171000 */
+/* rev=1790172000 */

@@ -15,28 +15,28 @@
   "categories": ["social", "social_networking", "sports"],
   "icons": [
     {
-      "src": "./favicon.ico",
-      "sizes": "16x16 32x32 48x48",
-      "type": "image/x-icon",
-      "purpose": "any"
-    },
-    {
-      "src": "./assets/img/icons/icon-192.png",
+      "src": "./icon.php?src=icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./assets/img/icons/icon-512.png",
+      "src": "./icon.php?src=icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./assets/img/icons/icon-maskable.png",
+      "src": "./icon.php?src=icon-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "./favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -44,19 +44,19 @@
       "name": "Noticias",
       "short_name": "Noticias",
       "url": "./feed.php",
-      "icons": [{ "src": "./assets/img/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "./icon.php?src=icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Campos de juego",
       "short_name": "Campos",
       "url": "./fields.php",
-      "icons": [{ "src": "./assets/img/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "./icon.php?src=icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Tienda",
       "short_name": "Tienda",
       "url": "./store.php",
-      "icons": [{ "src": "./assets/img/icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "./icon.php?src=icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

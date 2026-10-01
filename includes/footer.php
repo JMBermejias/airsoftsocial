@@ -89,7 +89,12 @@ $me = current_user();
   /* Rutas de la app: /dominio/subcarpeta/pagina.php -> /dominio/subcarpeta/ */
   var dir = location.pathname.replace(/[^\/]*$/, '');
   var swUrl = dir + 'service-worker.js';
-  navigator.serviceWorker.register(swUrl).catch(function (err) {
+  /* Se declara el ámbito a mano. Si la app está en una subcarpeta, el ámbito por
+     defecto sería esa subcarpeta, y con él Chrome no controla ni el manifest ni
+     las páginas de la raíz: la instalación falla sin avisar. */
+  navigator.serviceWorker.register(swUrl, { scope: dir }).then(function () {
+    console.log('[PWA] Service worker registrado en', dir);
+  }).catch(function (err) {
     console.error('[PWA] No se pudo registrar el service worker:', err, swUrl);
   });
 })();

@@ -3,8 +3,19 @@ Options -Indexes
 DirectoryIndex index.php
 
 # PWA: tipos MIME correctos (manifest + service worker)
+#
+# OJO: el manifest y los iconos se sirven desde manifest.php e icon.php, que
+# ponen sus propias cabeceras, porque AddType no funciona en todos los hostings
+# y este fichero lleva nosniff: si el manifest no llega como
+# application/manifest+json, Chrome lo descarta entero y no hay icono ni
+# instalación. Estas líneas se quedan por si alguien usa el fichero estático.
 AddType application/manifest+json .webmanifest
 AddType application/javascript .js .mjs
+
+# El service worker necesita poder controlar todo el sitio.
+<IfModule mod_headers.c>
+  Header set Service-Worker-Allowed "/"
+</IfModule>
 
 # Bloquear el archivo de configuración (contiene contraseñas de la BD)
 <FilesMatch "^(config\.php)$">

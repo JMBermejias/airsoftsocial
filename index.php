@@ -88,7 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?= e(APP_NAME) ?>">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.php">
+<link rel="icon" type="image/png" sizes="192x192" href="icon.php?src=icon-192.png">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="assets/img/icons/icon-512.png">
@@ -170,10 +171,14 @@ function switchAuth(t){
 (function () {
   if (!('serviceWorker' in navigator)) return;
   if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
-  var swUrl = location.pathname.replace(/[^\/]*$/, '') + 'service-worker.js';
-  navigator.serviceWorker.register(swUrl).catch(function (err) {
-    console.error('[PWA] No se pudo registrar el service worker:', err, swUrl);
-  });
+  var dir = location.pathname.replace(/[^\/]*$/, '');
+  /* Ámbito explícito: si la app está en una subcarpeta, sin esto Chrome no
+     controla el manifest ni las páginas de la raíz y la instalación falla. */
+  navigator.serviceWorker.register(dir + 'service-worker.js', { scope: dir })
+    .then(function () { console.log('[PWA] Service worker registrado en', dir); })
+    .catch(function (err) {
+      console.error('[PWA] No se pudo registrar el service worker:', err, dir);
+    });
 })();
 </script>
 </body>
