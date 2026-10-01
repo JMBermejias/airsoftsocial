@@ -538,6 +538,19 @@ textarea{resize:vertical}
 .auth-form label{margin-top:6px}
 .hidden{display:none!important}
 
+/* ---------- MENÚ DESPLEGABLE DEL MÓVIL (reglas base) ----------
+ * Estas tres reglas se escriben AQUÍ, antes del bloque móvil de 880px, y no
+ * al final del fichero. Al final ganaban al media query por tener la misma
+ * especificidad, así que en el móvil el botón de menú se quedaba con
+ * display:none (0x0 píxeles, sin pulsarse) y el menú sin altura: en pantalla
+ * no había ni botón ni navegación. El bloque de 880px las vuelve a poner.
+ */
+.menu-toggle,.menu-backdrop{display:none}
+.install-hint{display:none;padding:0 12px 8px}
+.install-hint-btn{display:block;width:100%;background:rgba(232,147,47,.18);border:1px solid var(--accent);color:#fff;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px}
+.install-hint-btn:hover{filter:brightness(1.15)}
+.install-hint-why{display:block;margin-top:5px;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.35}
+
 /* ---------- RESPONSIVE ---------- */
 @media (max-width:1080px){
   :root{--left-w:210px;--right-w:250px}
@@ -597,15 +610,16 @@ textarea{resize:vertical}
   .left-sidebar .brand-logo{font-size:22px}
   .left-sidebar .brand h1{font-size:15px;letter-spacing:.5px}
   .left-sidebar .brand small{display:none}
+  /* En la barra solo el avatar: ir a tu perfil y ya. La ✕ de cerrar sesión se
+     quita porque se solapaba con el avatar y además dentro del menú ya está
+     "Salir de la aplicación", que hace lo mismo. */
   .left-sidebar .miniprofile{
-    position:absolute;top:8px;right:56px;
-    margin:0;padding:0;border:none;background:none;gap:8px;
+    position:absolute;top:10px;right:60px;
+    margin:0;padding:0;border:none;background:none;gap:0;
   }
-  .left-sidebar .miniprofile .avatar{width:34px;height:34px}
+  .left-sidebar .miniprofile .avatar{width:36px;height:36px}
   .left-sidebar .miniprofile-meta{display:none}
-  .left-sidebar .miniprofile .logout{
-    position:static;width:34px;height:34px;font-size:15px;
-  }
+  .left-sidebar .miniprofile .logout{display:none}
 
   /* --- Botón de menú (solo móvil) --- */
   .menu-toggle{
@@ -701,12 +715,10 @@ textarea{resize:vertical}
 
 /* El botón de menú y el fondo solo existen en móvil; en escritorio el panel
    está siempre abierto y no hacen falta. El aviso de instalar tampoco: en
-   escritorio ya está el botón de abajo del panel, más completo. */
-.menu-toggle,.menu-backdrop{display:none}
-.install-hint{display:none;padding:0 12px 8px}
-.install-hint-btn{display:block;width:100%;background:rgba(232,147,47,.18);border:1px solid var(--accent);color:#fff;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px}
-.install-hint-btn:hover{filter:brightness(1.15)}
-.install-hint-why{display:block;margin-top:5px;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.35}
+   /* El botón de menú, el fondo y el aviso de instalar se muestran dentro del
+   bloque móvil de 880px; sus reglas base están más arriba, antes de ese bloque
+   (si se pusieran aquí, ganarían al media query y en el móvil se quedarían con
+   display:none, que es justo el fallo que had). */
 .pwa-install:hover{filter:brightness(1.15)}
 
 @media (max-width:720px){
@@ -749,7 +761,6 @@ textarea{resize:vertical}
   .story-close{right:14px;top:14px;font-size:22px}
   /* Las historias y el compositor no fuerzan ancho mínimo. */
   .story-preview{min-width:0}
-  .composer-tools,.toolbar{flex-direction:column;align-items:stretch}
   .profile-details{grid-template-columns:1fr}
   /* Botones: a ancho completo y con alto suficiente para el dedo. En fila se
      aprietan y se pulsan mal, y de tamaño desigual se ve descuadrado. */
