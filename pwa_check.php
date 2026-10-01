@@ -97,15 +97,18 @@ $e = static fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
       } else {
           foreach (($j['icons'] ?? []) as $i) {
               $src = (string)($i['src'] ?? '');
-              /* Los iconos se sirven por icon.php?src=fichero.png. Ese src es
-                 un nombre suelto: el fichero real vive en
-                 assets/img/icons/, que es donde icon.php lo busca. */
+              /* Los iconos se sirven por icon.php/<fichero> (o icon.php?src=).
+                 El fichero real vive en assets/img/icons/, que es donde
+                 icon.php lo busca. */
               $rel = preg_replace('#^\./#', '', $src);
-              $file = $rel;
-              if (str_contains($rel, '?')) {
+              $name = '';
+              if (str_contains($rel, 'icon.php/')) {
+                  $name = basename((string)explode('icon.php/', $rel, 2)[1]);
+              } elseif (str_contains($rel, '?')) {
                   parse_str((string)explode('?', $rel, 2)[1], $q);
-                  if (!empty($q['src'])) $file = 'assets/img/icons/' . basename((string)$q['src']);
+                  if (!empty($q['src'])) $name = basename((string)$q['src']);
               }
+              $file = $name !== '' ? 'assets/img/icons/' . $name : $rel;
               $mfIcons[] = [
                   'src'    => $src,
                   'sizes'  => (string)($i['sizes'] ?? '?'),

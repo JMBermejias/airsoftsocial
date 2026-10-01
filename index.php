@@ -88,14 +88,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?= e(APP_NAME) ?>">
-<link rel="manifest" href="manifest.php">
+<link rel="manifest" href="manifest.php?v=<?= e(str_replace('.', '', app_version())) ?>">
 <link rel="icon" type="image/png" sizes="192x192" href="icon.php?src=icon-192.png">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="assets/img/icons/icon-512.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= e(APP_NAME) ?> · Iniciar sesión</title>
-<link rel="stylesheet" href="assets/css/style.css?v=25">
+<link rel="stylesheet" href="assets/css/style.css?v=26">
 </head>
 <body class="auth-body">
 <div class="auth-wrap">
@@ -158,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
   <button class="btn btn-ghost btn-block pwa-install" onclick="pwaInstall()" style="margin-top:12px">⬇️ Instalar Airsoft Social en el escritorio / móvil</button>
 </div>
-<script src="assets/js/app.js?v=14"></script>
+<script src="assets/js/app.js?v=15"></script>
 <script>
 function switchAuth(t){
   document.getElementById('form-login').classList.toggle('hidden', t!=='login');

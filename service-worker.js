@@ -8,13 +8,15 @@
  *   pasan directamente a la red.
  * Bump CACHE al hacer cambios en plantillas o assets para invalidar.
  */
-const CACHE = 'airsoftsocial-v28';
-const ASSET_RE = /\.(css|js|png|jpe?g|gif|webp|svg|ico|webmanifest|woff2?|pdf)$/;
+const CACHE = 'airsoftsocial-v29';
+const ASSET_RE = /\.(png|jpe?g|gif|webp|svg|ico|woff2?|pdf)$/;
+/* El shell solo lleva lo que hace falta para arrancar sin conexión. El CSS y el
+ * JS NO van aquí a propósito: se piden siempre por la red (ver el fetch), y
+ * cachearlos con un ?v= distinto del que se pide solo llena la caché de
+ * versiones inútiles. */
 const SHELL = [
   './',
   './favicon.ico',
-  './assets/css/style.css',
-  './assets/js/app.js',
   './assets/img/default-avatar.svg',
   './assets/img/icons/icon-180.png',
   './assets/img/icons/icon-192.png',
@@ -58,7 +60,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: caché primero, refresco en segundo plano
+  /* El CSS y el JS SIEMPRE a la red. Antes iban por stale-while-revalidate,
+     que devuelve primero la copia cacheada: con el ?v= en la URL, cada versión
+     nueva crea una entrada aparte y el móvil se quedaba con el fichero viejo
+     (menú que no abría, botones mal) hasta reinstalar. Y si no hay red, se usa
+     la copia cacheada, así que sin conexión sigue funcionando. */
+  if (/\.(css|js)$/.test(url.pathname)) {
+    event.respondWith(networkFirst(req));
+    return;
+  }
+
+  // El resto de estáticos (imágenes, fuentes): caché primero, refresco después
   if (ASSET_RE.test(url.pathname)) {
     event.respondWith(staleWhileRevalidate(req));
     return;
@@ -100,4 +112,4 @@ async function networkFirst(req) {
     });
   }
 }
-/* rev=1790172000 */
+/* rev=1790173000 */

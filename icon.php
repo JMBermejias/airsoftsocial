@@ -24,8 +24,29 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
-/* --- Qué fichero se puede servir: solo los de esta carpeta --- */
-$src = isset($_GET['src']) ? basename((string)$_GET['src']) : 'icon-512.png';
+/* --- Qué fichero se puede servir: solo los de esta carpeta ---
+ *
+ * Se aceptan dos formas:
+ *   icon.php?src=icon-512.png   (con query)
+ *   icon.php/icon-512.png       (como ruta, sin query)
+ *
+ * La segunda es la que usa el manifest. Las URLs con query las cachea el
+ * instalador de Android de forma distinta y a veces se queda con una copia
+ * antigua; una ruta fija como /icon.php/icon-512.png se pide siempre igual.
+ */
+$src = '';
+if (isset($_GET['src'])) {
+    $src = basename((string)$_GET['src']);
+} else {
+    /* PATH_INFO: /icon.php/icon-512.png -> "icon-512.png" */
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '');
+    $pos = strpos($uri, 'icon.php/');
+    if ($pos !== false) {
+        $src = basename(substr($uri, $pos + strlen('icon.php/')));
+    }
+}
+if ($src === '') $src = 'icon-512.png';
+
 $dir = __DIR__ . '/assets/img/icons/';
 $path = $dir . $src;
 $mimes = [

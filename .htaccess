@@ -17,6 +17,16 @@ AddType application/javascript .js .mjs
   Header set Service-Worker-Allowed "/"
 </IfModule>
 
+# icon.php/icon-512.png -> icon.php?src=icon-512.png
+# El manifest de la PWA usa rutas fijas así porque el instalador de Android
+# cachea mal las URLs con query (?src=...) y se queda con un icono antiguo.
+# Si el hosting no acepta PATH_INFO, icon.php también acepta ?src= y el
+# manifest sigue funcionando (es lo que hace la regla de reescritura).
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^icon\.php/(.+)$ icon.php?src=$1 [L,QSA]
+</IfModule>
+
 # Bloquear el archivo de configuración (contiene contraseñas de la BD)
 <FilesMatch "^(config\.php)$">
   <IfModule mod_authz_core.c>
