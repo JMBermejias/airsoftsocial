@@ -538,16 +538,102 @@ textarea{resize:vertical}
   :root{--left-w:210px;--right-w:250px}
   .content{max-width:100%}
 }
+/* ---------- MÓVIL: BARRA SUPERIOR PEGADA + MENÚ DESPLEGABLE ----------
+ * Antes, por debajo de 880 px, el panel lateral entero (marca, perfil, menú,
+ * notificaciones, botones de inicio y salida) se apilaba encima del contenido.
+ * Eso obligaba a bajar casi un metro de scrolls para ver la primera
+ * publicación, y las notificaciones y el botón de instalar ni siquiera
+ * aparecían (estaban en display:none).
+ *
+ * Ahora el panel se convierte en una barra superior compacta y fija: marca,
+ * avatar y un botón de menú. El menú se abre encima, a pantalla completa.
+ * El contenido empieza justo debajo y ya no hay que desplazarse para nada. */
 @media (max-width:880px){
   .layout{flex-direction:column}
-  .sidebar{position:static!important;width:100%;height:auto}
-  .left-sidebar .notif-box,.left-sidebar .sidebar-foot{display:none}
-  .main-nav{flex-direction:row;flex-wrap:wrap;justify-content:center;overflow-x:auto}
-  /* En móvil el menú se pone en fila; los dos botones de arriba se ponen en
-     fila también, para que ocupen poco alto y sigan siendo alcanzables. */
-  .sidebar-quick{flex-direction:row;border-bottom:none;padding:8px 14px}
-  .quick-item{flex:1;justify-content:center;font-size:13px}
-  .store-sidebar{border-left:none;border-top:1px solid var(--line)}
+
+  /* --- La barra superior --- */
+  .sidebar{
+    position:sticky!important;top:0;z-index:60;
+    width:100%;height:auto;overflow:visible;
+    max-height:none;
+  }
+  .left-sidebar{
+    border-right:none;border-bottom:1px solid var(--line);
+    height:auto;max-height:none;padding:0;
+    background:var(--olive-3);
+  }
+  /* Marca y perfil, en una fila corta. */
+  .left-sidebar .brand{padding:8px 12px;gap:8px}
+  .left-sidebar .brand-logo{font-size:22px}
+  .left-sidebar .brand h1{font-size:15px;letter-spacing:.5px}
+  .left-sidebar .brand small{display:none}
+  .left-sidebar .miniprofile{
+    position:absolute;top:8px;right:56px;
+    margin:0;padding:0;border:none;background:none;gap:8px;
+  }
+  .left-sidebar .miniprofile .avatar{width:34px;height:34px}
+  .left-sidebar .miniprofile-meta{display:none}
+  .left-sidebar .miniprofile .logout{
+    position:static;width:34px;height:34px;font-size:15px;
+  }
+
+  /* --- Botón de menú (solo móvil) --- */
+  .menu-toggle{
+    display:flex;align-items:center;justify-content:center;
+    position:absolute;top:8px;right:12px;
+    width:40px;height:40px;padding:0;
+    background:var(--bg-soft);border:1px solid var(--line);
+    border-radius:10px;color:var(--text);font-size:20px;cursor:pointer;
+    z-index:2;
+  }
+  .menu-toggle:active{filter:brightness(1.25)}
+
+  /* El aviso de instalar va bajo la marca, dentro de la barra fija. */
+  .left-sidebar .install-hint{display:block;padding:0 12px 8px}
+  .left-sidebar .install-hint[hidden]{display:none}
+
+  /* --- El menú desplegado --- */
+  .main-nav,.sidebar-quick,.notif-box,.sidebar-foot{
+    display:none;
+  }
+  .left-sidebar.open .main-nav,
+  .left-sidebar.open .sidebar-quick,
+  .left-sidebar.open .notif-box,
+  .left-sidebar.open .sidebar-foot{display:flex}
+  .left-sidebar.open .main-nav{
+    flex-direction:column;flex-wrap:nowrap;
+    border-top:1px solid var(--line);padding:6px;
+    max-height:70vh;overflow-y:auto;
+  }
+  .left-sidebar.open .nav-item{
+    padding:12px 14px;font-size:15px;border-radius:10px;
+  }
+  .left-sidebar.open .nav-item.active{background:rgba(255,255,255,.07)}
+  /* Las notificaciones y el botón de instalar vuelven a verse: antes estaban
+     ocultos en móvil, y sin el botón no se podía instalar la app. */
+  .left-sidebar.open .notif-box{
+    margin:6px 6px 0;padding:12px;border-top:1px solid var(--line);
+    max-height:34vh;overflow-y:auto;
+  }
+  .left-sidebar.open .sidebar-foot{margin-top:auto;padding:10px 6px 6px}
+  .left-sidebar.open .sidebar-quick{
+    flex-direction:column;gap:2px;border-bottom:1px solid var(--line);padding:6px;
+  }
+  .left-sidebar.open .quick-item{
+    justify-content:flex-start;font-size:15px;padding:12px 14px;border-radius:10px;
+  }
+
+  /* El fondo oscurecido al abrir el menú. */
+  .menu-backdrop{
+    display:none;position:fixed;inset:0;z-index:55;
+    background:rgba(0,0,0,.55);
+  }
+  .menu-backdrop.show{display:block}
+
+  /* --- Contenido --- */
+  .store-sidebar{
+    border-left:none;border-top:1px solid var(--line);
+  }
   .content{padding:14px}
   .auth-wrap,.form-row,.two-col{grid-template-columns:1fr}
 }
@@ -613,6 +699,15 @@ textarea{resize:vertical}
 
 /* ---------- INSTALAR APP (PWA) ---------- */
 .pwa-install{display:block;width:100%;margin-bottom:10px;background:rgba(232,147,47,.16);border:1px solid var(--accent);color:#fff;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px}
+
+/* El botón de menú y el fondo solo existen en móvil; en escritorio el panel
+   está siempre abierto y no hacen falta. El aviso de instalar tampoco: en
+   escritorio ya está el botón de abajo del panel, más completo. */
+.menu-toggle,.menu-backdrop{display:none}
+.install-hint{display:none;padding:0 12px 8px}
+.install-hint-btn{display:block;width:100%;background:rgba(232,147,47,.18);border:1px solid var(--accent);color:#fff;padding:9px 12px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px}
+.install-hint-btn:hover{filter:brightness(1.15)}
+.install-hint-why{display:block;margin-top:5px;font-size:11.5px;color:var(--muted);text-align:center;line-height:1.35}
 .pwa-install:hover{filter:brightness(1.15)}
 
 @media (max-width:720px){

@@ -1,5 +1,60 @@
 /* Airsoft Social · Interacciones del cliente */
 
+/* ---- Service worker ----
+ * Cuando entra una versión nueva, el service worker nuevo espera a que se cierre
+ * la pestaña. Con esto se recarga solo al cambiar, que es lo que hace que los
+ * cambios se vean sin tener que cerrar y abrir el navegador a mano. */
+if (navigator.serviceWorker) {
+  var reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  });
+}
+
+/* ---- Menú del móvil ----
+ * En móvil el panel lateral es una barra superior con un botón que abre el menú
+ * desplegado (notificaciones, instalar la app, salir…). En escritorio el botón
+ * no se ve, así que todo esto no hace nada y el menú está siempre abierto. */
+(function () {
+  var sidebar  = document.getElementById('app-sidebar');
+  var toggle   = document.getElementById('menu-toggle');
+  var backdrop = document.getElementById('menu-backdrop');
+  if (!sidebar || !toggle) return;
+
+  function setOpen(open) {
+    sidebar.classList.toggle('open', open);
+    if (backdrop) backdrop.classList.toggle('show', open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    toggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+    /* Al abrir se bloquea el scroll del fondo, para que el dedo no mueva la
+       página por detrás del menú. */
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
+  toggle.addEventListener('click', function () {
+    setOpen(!sidebar.classList.contains('open'));
+  });
+  if (backdrop) {
+    backdrop.addEventListener('click', function () { setOpen(false); });
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') setOpen(false);
+  });
+  /* Al pulsar un enlace del menú se cierra (por si hay navegación interna). */
+  sidebar.addEventListener('click', function (e) {
+    if (e.target.closest('a') && sidebar.classList.contains('open')) {
+      setOpen(false);
+    }
+  });
+  /* Si la ventana se ensancha (giro del móvil), el menú vuelve a estar siempre
+     visible, así que se sueltan el estado y el scroll. */
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 880) setOpen(false);
+  });
+})();
+
 /* ---- Visor de historias ---- */
 function openStory(data){
   var v = document.getElementById('story-viewer');
@@ -85,12 +140,58 @@ function exitApp(){
   window.location.href = 'logout.php';
 }
 
-/* ---- Instalación de la app (PWA): icono de escritorio / móvil ---- */
+/* ---- Instalación de la app (PWA): icono de escritorio / móvil ----
+ *
+ * Android y Chrome SOLO crean el icono si todo esto se cumple:
+ *  1. La web en HTTPS. Sin HTTPS no hay service worker y no hay icono.
+ *  2. El manifest debe cargar y traer iconos de 192 y 512.
+ *  3. El service worker debe estar activo.
+ * Si falta el punto 1, no hay nada que arreglar en el código: es el hosting. */
 var deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', function(e){
+
+function isHttps() {
+  return location.protocol === 'https:'
+      || location.hostname === 'localhost'
+      || location.hostname === '127.0.0.1';
+}
+
+window.addEventListener('beforeinstallprompt', function (e) {
   e.preventDefault();
   deferredPrompt = e;
+  showInstallHint('');
 });
+
+window.addEventListener('appinstalled', function () {
+  deferredPrompt = null;
+  var hint = document.getElementById('install-hint');
+  if (hint) hint.hidden = true;
+});
+
+/* Aviso visible en la barra superior. Se enseña solo el botón cuando el
+   navegador confirma que se puede instalar, o el motivo cuando no se puede. */
+function showInstallHint(why) {
+  var hint = document.getElementById('install-hint');
+  var whyEl = document.getElementById('install-hint-why');
+  if (!hint) return;
+  hint.hidden = false;
+  if (whyEl) whyEl.textContent = why || '';
+}
+
+/* Al cargar, si el navegador no ha lanzado el evento de instalación, se
+   comprueba por qué: casi siempre es que la web va por HTTP, y decirlo ahorra
+   bastante tiempo. */
+setTimeout(function () {
+  if (deferredPrompt) return;                 /* ya se puede instalar */
+  var hint = document.getElementById('install-hint');
+  if (!hint) return;
+  if (!isHttps()) {
+    showInstallHint('Necesita HTTPS para poder crear el icono en el móvil.');
+    return;
+  }
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) return;
+  /* HTTPS y sin service worker activo: aún no está listo, pero no es un problema. */
+}, 2500);
+
 function pwaInstall(){
   if (deferredPrompt) {
     deferredPrompt.prompt();
@@ -100,6 +201,10 @@ function pwaInstall(){
     return;
   }
   var ua = navigator.userAgent;
+  if (!isHttps()) {
+    alert('Para poder crear el icono en el móvil, la web tiene que ir por HTTPS (con ladirección https:// y el candado).\n\nAhora mismo se está viendo por http://, y los móviles Android no instalan aplicaciones web sin HTTPS.\n\nEs cosa del alojamiento: hay que activar el certificado SSL gratuito. En la mayoría de hostings se hace desde el panel, en «SSL» o «Certificados».');
+    return;
+  }
   /* Firefox no implementa beforeinstallprompt: no admite instalación de PWA en escritorio */
   if (ua.indexOf('Firefox') !== -1) {
     if (ua.indexOf('Android') !== -1) {

@@ -37,22 +37,39 @@ $schemaIssues = ensure_schema();
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?= e(APP_NAME) ?>">
 <link rel="manifest" href="manifest.webmanifest">
+<!-- El favicon.ico va primero a propósito: el navegador y el instalador de
+     Android lo piden antes de mirar el manifest, y si no existe sale un icono
+     genérico en vez del logo. -->
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/img/icons/icon-512.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>
-<link rel="stylesheet" href="assets/css/style.css?v=23">
+<link rel="stylesheet" href="assets/css/style.css?v=24">
 </head>
 <body>
 <div class="layout">
 
   <!-- ===================== SIDEBAR IZQUIERDO: DASHBOARD DE CONTROL ===================== -->
-  <aside class="sidebar left-sidebar">
+  <aside class="sidebar left-sidebar" id="app-sidebar">
+    <!-- Solo en móvil (el CSS lo oculta en escritorio). Abre y cierra el menú. -->
+    <button class="menu-toggle" id="menu-toggle" type="button"
+            aria-label="Abrir menú" aria-expanded="false" aria-controls="app-sidebar">☰</button>
+
     <div class="brand">
       <span class="brand-logo">🎯</span>
       <div>
         <h1><?= e(APP_NAME) ?></h1>
         <small>Red social airsoft</small>
       </div>
+    </div>
+
+    <!-- Aviso de instalación: en móvil el botón del panel queda escondido dentro
+         del menú, y mucha gente no lo encuentra. Este botón se muestra siempre
+         que el navegador dice que se puede instalar (y avisa si es por HTTP). -->
+    <div class="install-hint" id="install-hint" hidden>
+      <button class="install-hint-btn" onclick="pwaInstall()">⬇️ Instalar la app (icono en el móvil)</button>
+      <span class="install-hint-why" id="install-hint-why"></span>
     </div>
 
     <div class="miniprofile">
@@ -140,6 +157,9 @@ $schemaIssues = ensure_schema();
       <button class="pwa-install" onclick="pwaInstall()">⬇️ Instalar la app (icono en escritorio / móvil)</button>
     </div>
   </aside>
+
+  <!-- Toca este fondo para cerrar el menú del móvil. -->
+  <div class="menu-backdrop" id="menu-backdrop"></div>
 
   <!-- ===================== ÁREA DE TRABAJO ===================== -->
   <main class="content">

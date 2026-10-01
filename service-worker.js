@@ -8,14 +8,16 @@
  *   pasan directamente a la red.
  * Bump CACHE al hacer cambios en plantillas o assets para invalidar.
  */
-const CACHE = 'airsoftsocial-v24';
-const ASSET_RE = /\.(css|js|png|jpe?g|gif|webp|svg|ico|woff2?|pdf)$/;
+const CACHE = 'airsoftsocial-v25';
+const ASSET_RE = /\.(css|js|png|jpe?g|gif|webp|svg|ico|webmanifest|woff2?|pdf)$/;
 const SHELL = [
   './',
   './manifest.webmanifest',
+  './favicon.ico',
   './assets/css/style.css',
   './assets/js/app.js',
   './assets/img/default-avatar.svg',
+  './assets/img/icons/icon-180.png',
   './assets/img/icons/icon-192.png',
   './assets/img/icons/icon-512.png',
   './assets/img/icons/icon-maskable.png'
@@ -43,6 +45,14 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+
+  // El manifest y el favicon van siempre a la red: si se sirven de caché, el
+  // instalador de Android sigue viendo el icono viejo (o ninguno) y no hay
+  // forma de forzar la actualización desde el navegador.
+  if (/\.(webmanifest|ico)$/.test(url.pathname)) {
+    event.respondWith(networkFirst(req));
+    return;
+  }
 
   // Static assets: caché primero, refresco en segundo plano
   if (ASSET_RE.test(url.pathname)) {
@@ -86,4 +96,4 @@ async function networkFirst(req) {
     });
   }
 }
-/* rev=1790169000 */
+/* rev=1790170000 */

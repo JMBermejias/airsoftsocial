@@ -89,10 +89,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?= e(APP_NAME) ?>">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="assets/img/icons/icon-512.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= e(APP_NAME) ?> · Iniciar sesión</title>
-<link rel="stylesheet" href="assets/css/style.css?v=23">
+<link rel="stylesheet" href="assets/css/style.css?v=24">
 </head>
 <body class="auth-body">
 <div class="auth-wrap">
@@ -155,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
   <button class="btn btn-ghost btn-block pwa-install" onclick="pwaInstall()" style="margin-top:12px">⬇️ Instalar Airsoft Social en el escritorio / móvil</button>
 </div>
-<script src="assets/js/app.js?v=12"></script>
+<script src="assets/js/app.js?v=13"></script>
 <script>
 function switchAuth(t){
   document.getElementById('form-login').classList.toggle('hidden', t!=='login');
@@ -163,7 +165,7 @@ function switchAuth(t){
   document.querySelectorAll('.auth-tabs .tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
 }
 /* Registro del service worker con ruta absoluta: si la app está en una
- * subcarpeta, la ruta relativa中国证监会 se resuelve contra la página actual
+ * subcarpeta, la ruta relativa se resuelve contra la página actual
  * y el registro falla, con lo que Chrome no ofrece instalar la app. */
 (function () {
   if (!('serviceWorker' in navigator)) return;

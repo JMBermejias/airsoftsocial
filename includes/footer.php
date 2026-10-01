@@ -72,7 +72,7 @@ $me = current_user();
   <div id="story-progress"></div>
 </div>
 
-<script src="assets/js/app.js?v=12"></script>
+<script src="assets/js/app.js?v=13"></script>
 <script>
 /* Registro del service worker (PWA instalable). Requiere HTTPS o localhost.
  *
