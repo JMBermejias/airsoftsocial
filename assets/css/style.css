@@ -395,7 +395,14 @@ textarea{resize:vertical}
 .field-body h3{margin:0}
 .field-tags{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
 .field-desc{color:var(--muted);font-size:13px;margin:4px 0 8px}
-.field-hero{display:block;width:100%;max-height:320px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--line);margin-bottom:14px}
+/* Mismo criterio que la foto del producto: alto fijo y recorte centrado, en
+ * lugar de max-height, que dejaba cada imagen con una altura distinta. */
+.field-hero{
+  display:block;width:100%;height:320px;
+  object-fit:cover;object-position:center;
+  border-radius:var(--radius);border:1px solid var(--line);
+  margin:0 auto 14px;
+}
 .field-detail-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
 .field-details-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
 .info-item{background:var(--bg-soft);border-radius:8px;padding:10px}
@@ -565,7 +572,16 @@ textarea{resize:vertical}
 .breadcrumb{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px;margin-bottom:14px}
 .product-detail{border-color:var(--line)}
 .product-detail-grid{display:grid;grid-template-columns:minmax(220px,42%) 1fr;gap:20px}
-.product-detail-img{display:block;width:100%;border-radius:var(--radius);border:1px solid var(--line);object-fit:cover;max-height:340px}
+/* La foto de la ficha se recorta como las miniaturas de la tienda: alto fijo y
+ * object-fit:cover, para que el recorte quede centrado y la banda tenga siempre
+ * la misma altura. Con max-height el alto dependía de cada foto y el recorte se
+ * descentraba. margin auto la centra en la columna. */
+.product-detail-media{display:flex;justify-content:center;align-items:flex-start}
+.product-detail-img{
+  display:block;width:100%;height:340px;
+  border-radius:var(--radius);border:1px solid var(--line);
+  object-fit:cover;object-position:center;margin:0 auto;
+}
 .product-detail-img.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:260px;color:var(--muted);font-weight:800;font-size:16px;background:linear-gradient(160deg,var(--olive),#1b1f15)}
 .product-detail-img.placeholder span{font-size:52px}
 .product-detail-info h2{margin:0 0 6px;color:#fff;font-size:22px}
@@ -655,7 +671,8 @@ textarea{resize:vertical}
   .quick-item{justify-content:flex-start;font-size:14px}
   /* La tienda se lee mejor en una columna. */
   .product-detail-grid{grid-template-columns:1fr}
-  .product-detail-img{max-height:220px}
+  .product-detail-img{height:230px}
+  .field-hero{height:220px}
   .stats-grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
 }
 
