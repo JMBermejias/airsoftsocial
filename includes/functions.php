@@ -3,6 +3,12 @@
  * Funciones y helpers de Airsoft Social
  */
 
+/* La trampa de errores va lo primero, antes de nada que pueda morir: si falla
+ * al arrancar, al menos queda anotado en uploads/_system/error.log. Sin esto
+ * un error fatal se traduce en un 502 sin texto, imposible de diagnosticar. */
+require_once __DIR__ . '/boot.php';
+as_error_trap();
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

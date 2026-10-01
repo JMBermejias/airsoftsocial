@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="icon" type="image/png" sizes="512x512" href="assets/img/icons/icon-512.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= e(APP_NAME) ?> · Iniciar sesión</title>
-<link rel="stylesheet" href="assets/css/style.css?v=28">
+<link rel="stylesheet" href="assets/css/style.css?v=29">
 </head>
 <body class="auth-body">
 <div class="auth-wrap">

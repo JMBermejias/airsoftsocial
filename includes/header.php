@@ -46,7 +46,7 @@ $schemaIssues = ensure_schema();
 <link rel="icon" type="image/png" sizes="512x512" href="assets/img/icons/icon-512.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>
-<link rel="stylesheet" href="assets/css/style.css?v=28">
+<link rel="stylesheet" href="assets/css/style.css?v=29">
 </head>
 <body>
 <div class="layout">

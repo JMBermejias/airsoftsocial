@@ -46,6 +46,15 @@ define('GITHUB_TOKEN', '');
  * no hace falta tocarlo salvo que tu hosting sea muy lento. */
 define('SCHEMA_CHECK_HOURS', 6);
 
+/* Contraseña para poder abrir error_log.php (el registro de errores) sin
+ * tener que iniciar sesión con una cuenta de administrador. Útil cuando la web
+ * no carga y no puedes entrar, que es justo cuando más hace falta verlo.
+ * Luego se abre con:  error_log.php?k=ESTA_CLAVE
+ * Ponla solo mientras estés diagnosticando y bórrala después: quien la sepa
+ * puede ver las rutas del servidor y mensajes técnicos. Si no la defines, la
+ * página solo se abre entrando como administrador. */
+define('DIAG_PASSWORD', '');
+
 /* ------------------------------------------------------------
  * RANGOS MILITARES (opcional)
  * Los usuarios suben de rango según los días desde su alta. El
