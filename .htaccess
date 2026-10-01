@@ -17,15 +17,21 @@ AddType application/javascript .js .mjs
   Header set Service-Worker-Allowed "/"
 </IfModule>
 
-# icon.php/icon-512.png -> icon.php?src=icon-512.png
-# El manifest de la PWA usa rutas fijas así porque el instalador de Android
-# cachea mal las URLs con query (?src=...) y se queda con un icono antiguo.
-# Si el hosting no acepta PATH_INFO, icon.php también acepta ?src= y el
-# manifest sigue funcionando (es lo que hace la regla de reescritura).
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteRule ^icon\.php/(.+)$ icon.php?src=$1 [L,QSA]
-</IfModule>
+# SIN mod_rewrite a propósito.
+#
+# El manifest pide los iconos como icon.php/icon-512.png (rutas fijas, que
+# Android cachea mejor que las URLs con ?src=). Eso lo resuelve el propio
+# icon.php leyendo REQUEST_URI, sin necesidad de reglas de reescritura.
+#
+# Antes había un bloque <IfModule mod_rewrite.c> con RewriteEngine On aquí, y
+# fue la causa de un 502: en hosting compartido, activar mod_rewrite sin
+# permiso o sin las directivas habilitadas en el panel da error de
+# configuración, y Apache se queda sin arrancar (500, o 502 si hay PHP-FPM
+# detrás). Enterrar el módulo en un IfModule no protege de eso: si el módulo
+# está activo, RewriteEngine se ejecuta.
+#
+# Si algún día hace falta reescritura, debe activarse desde el panel del
+# hosting (no aquí) y probarse en un subdominio primero.
 
 # Bloquear el archivo de configuración (contiene contraseñas de la BD)
 <FilesMatch "^(config\.php)$">

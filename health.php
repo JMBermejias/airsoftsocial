@@ -25,6 +25,52 @@ $checks['allow_url_fopen'] = [ini_get('allow_url_fopen') ? 'activado' : 'desacti
 $checks['Límite de ejecución'] = [ini_get('max_execution_time') . ' s', true];
 $checks['Memoria máxima'] = [ini_get('memory_limit'), true];
 
+/* 1b) Lo que puede dar un 502 sin que haya error de PHP.
+ *
+ * El 502 Bad Gateway casi nunca es un fallo de código: es Apache o PHP-FPM
+ * que no puede arrancar. Las causas habituales, todas del hosting:
+ *   - una directiva no permitida en .htaccess (Options, RewriteEngine,
+ *     php_flag...) -> error de configuración y Apache se cae
+ *   - PHP-FPM sin memoria o sin tiempo
+ *   - la base de datos no responde
+ * Se comprueba lo que se puede desde PHP. */
+$serverOk  = function_exists($_SERVER['SERVER_SOFTWARE'] ?? '') || !empty($_SERVER['SERVER_SOFTWARE']);
+$software  = $_SERVER['SERVER_SOFTWARE'] ?? 'desconocido';
+$checks['Servidor web'] = [$software, $serverOk];
+
+/* El .htaccess se revisa línea a línea buscando directivas que en hosting
+ * compartido suelen estar bloqueadas y tumban Apache. */
+$htPath = __DIR__ . '/.htaccess';
+$htBad  = [];
+if (is_file($htPath)) {
+    /* Options NO se marca: "Options -Indexes" lleva en el proyecto desde el
+     * principio y funciona en el hosting donde está desplegado, así que no
+     * puede ser la causa de nada. Las directivas que sí tumban Apache en
+     * hosting compartido son las de servidor, no las deOptions. */
+    foreach (file($htPath) as $n => $linea) {
+        $t = trim($linea);
+        if ($t === '' || $t[0] === '#') continue;          /* comentarios */
+        foreach ([
+            '/^RewriteEngine\s+On/i'          => 'RewriteEngine On (requiere mod_rewrite permitted)',
+            '/^AllowOverride/i'               => 'AllowOverride (no se permite dentro de .htaccess)',
+            '/^php_(flag|value)/i'            => 'php_flag/php_value (requiere mod_php; con PHP-FPM da 500)',
+            '/^Listen\s/i'                    => 'Listen (solo en el VirtualHost, no en .htaccess)',
+            '/^ServerName\s/i'                => 'ServerName (solo en el VirtualHost)',
+            '/^ServerRoot\s/i'                => 'ServerRoot (solo en el VirtualHost)',
+            '/^LoadModule\s/i'                => 'LoadModule (solo en httpd.conf)',
+            '/^SSLSessionFile\s/i'            => 'SSLSessionFile (solo en el VirtualHost del SSL)',
+            '/^ErrorDocument\s+\d+\s+\//i'   => 'ErrorDocument con ruta (revisar que exista)',
+        ] as $re => $motivo) {
+            if (preg_match($re, $t)) $htBad[] = 'línea ' . ($n + 1) . ': ' . $motivo;
+        }
+    }
+}
+$checks['.htaccess'] = [
+    $htBad ? 'Directivas problemáticas → ' . implode(' | ', $htBad) : 'sin directivas bloqueables',
+    !$htBad,
+];
+if ($htBad) $bad++;
+
 /* 2) Archivos esenciales presentes y con sintaxis válida */
 $syntaxBad = [];
 foreach ($files as $f) {
