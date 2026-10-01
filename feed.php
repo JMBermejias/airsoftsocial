@@ -98,14 +98,20 @@ require_once __DIR__ . '/includes/header.php';
         <input type="file" name="file" accept="image/*,application/pdf">
         <span>📷 / 📄 Imagen o PDF</span>
       </label>
-      <input type="text" name="tags" placeholder="#etiquetas separadas por comas" class="tags-input">
+      <?php /* El campo de etiquetas y el botón «Publicar» van en la misma fila:
+               en el móvil, apilados, el botón quedaba como una barra naranja
+               gigante al lado de los campos. Con el envoltorio comparten línea
+               y el botón solo ocupa lo que necesita. */ ?>
+      <div class="composer-row">
+        <input type="text" name="tags" placeholder="#etiquetas separadas por comas" class="tags-input">
+        <button class="btn btn-primary" type="submit">Publicar</button>
+      </div>
       <?php if (is_admin()): ?>
         <label class="tool general">
           <input type="checkbox" name="is_general" value="1">
           <span>⭐ Noticia general (visible para toda la red)</span>
         </label>
       <?php endif; ?>
-      <button class="btn btn-primary" type="submit">Publicar</button>
     </div>
   </form>
 </section>

@@ -227,7 +227,12 @@ textarea{resize:vertical}
   display:flex;align-items:center;gap:8px;cursor:pointer;
   background:var(--bg-soft);border:1px dashed var(--line);border-radius:8px;
   padding:10px;color:var(--muted);font-size:13px;
+  /* El texto del selector de archivos puede ser largo («Ningún archivo
+     seleccionado») y se salía de la tarjeta. Con min-width:0 y flex-wrap se
+     parte la línea en vez de desbordar. */
+  min-width:0;flex-wrap:wrap;max-width:100%;
 }
+.file-picker > span{min-width:0;overflow-wrap:anywhere}
 .file-picker:hover{border-color:var(--accent);color:#fff}
 .file-picker input{display:none}
 .field-label{display:block;margin:14px 0 4px;font-size:13px;color:var(--text);font-weight:600}
@@ -238,7 +243,11 @@ textarea{resize:vertical}
 .search-input{flex:1}
 .tool{display:inline-flex;align-items:center;gap:6px;background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:13px;color:var(--muted);margin:0}
 .tool:hover{border-color:var(--accent);color:#fff}
-.tool input{margin:0;width:auto}
+/* El input[type=file] nativo es ancho fijo y no se encoge: en el móvil sacaba
+   la tarjeta del compositor («Ningún archivo seleccionado» se salía por la
+   derecha). Se oculta, como en .file-picker, y se pulsa la etiqueta entera. */
+.tool input{margin:0;width:auto;max-width:100%}
+.tool input[type=file]{display:none}
 /* El área de trabajo mide 728 px: dos columnas quedarían demasiado estrechas,
  * así que los formularios de administración (anuncios y tienda) van apilados. */
 .two-col{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
@@ -302,6 +311,11 @@ textarea{resize:vertical}
 .composer-top{display:flex;gap:10px;align-items:flex-start}
 .composer-top textarea{flex:1;margin:0}
 .composer-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* Campo de etiquetas + botón «Publicar» en la misma fila. El botón se queda con
+   su tamaño natural y el campo de etiquetas ocupa el hueco que sobra. */
+.composer-row{display:flex;gap:10px;align-items:center;flex:1 1 260px;min-width:0}
+.composer-row .tags-input{flex:1 1 auto;min-width:0}
+.composer-row .btn{flex:0 0 auto}
 .tags-input{flex:1;min-width:160px;margin:0!important}
 .feed-list{display:flex;flex-direction:column;gap:16px}
 
@@ -653,6 +667,26 @@ textarea{resize:vertical}
 @media (max-width:520px){
   .composer-tools,.toolbar{flex-direction:column;align-items:stretch}
   .profile-details{grid-template-columns:1fr}
+
+  /* Al poner los controles del compositor en columna hay que fijarles el ancho.
+     display:flex (en .btn y .tool) hace que midan lo que miden su contenido en
+     vez de la caja: el botón «Publicar» llegaba a medir 384 px en una pantalla de
+     320, saliéndose por la derecha. Con width:100% cada control ocupa
+     exactamente el ancho de la barra. */
+  .composer-tools > *,
+  .toolbar > *{align-self:stretch;max-width:100%}
+  .composer-tools .tool,
+  .composer-tools .tags-input{width:100%}
+
+  /* El botón «Publicar» ya no está suelto en la barra: comparte fila con el
+     campo de etiquetas dentro de .composer-row. Así no se apila a ancho completo
+     (que era lo que lo hacía parecer una barra naranja gigante). */
+  .composer-row{flex:1 1 100%}
+  .composer-tools .btn{
+    width:auto;flex:0 0 auto;align-self:center;
+    min-width:104px;min-height:44px;padding:10px 16px;font-size:15px;
+  }
+  .composer-tools .tool.general{width:100%}
 }
 
 /* ---------- RANGOS MILITARES ---------- */
