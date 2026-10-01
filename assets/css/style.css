@@ -771,14 +771,44 @@ textarea{resize:vertical}
   .toolbar .btn{flex:1 1 auto}
 }
 
-/* --- Hasta 430 px (móviles grandes) --- */
+/* --- Hasta 430 px (móviles grandes) ---
+ *
+ * El banner mide 728x90 (ratio 8:1). En un móvil de 320-430 px de ancho, poner
+ * esa proporción daría una franja de solo 38-50 px de alto: el titular de la
+ * propia imagen quedaría aplastado y el texto del anuncio se comería media
+ * franja. Y si se mantenían los 90 px, la imagen se deformaba y se recortaban
+ * los lados (que era el fallo que se veía).
+ *
+ * La solución: en móvil el alto lo marca el contenido y la imagen va detrás,
+ * taps toda la franja. Se le da un mínimo de 76 px, que es lo que hace falta
+ * para que se lean el titular de la foto y el texto del anuncio, y la imagen se
+ * contiene entera (object-fit:contain) para que nunca se deforme ni se corte.
+ * Con la proporción real (8:1) en 400 px de ancho saldrían 50 px y quedarían
+ * bandas negras; por eso se le pide un alto mayor y la imagen se adapta con
+ * contain, centering vertical. */
 @media (max-width:430px){
-  /* En pantallas estrechas el banner no puede medir 728 px: se recorta la parte
-     menos importante (la descripción) y se mantiene la franja de 90 px. */
+  /* Solo el banner "ancho" (imagen de fondo a 728x90) necesita el alto extra
+     para que se lean el titular de la foto y el texto. El resto de banners
+     llevan la imagen como miniatura al lado, y a los que se les suba el alto se
+     les agranda la miniatura de golpe. */
+  .ad-banner-wide{min-height:76px}
+  /* Los banners con miniatura al lado: alto cómodo para el dedo, pero sin
+     deformar la imagen. La miniatura se limita por el alto disponible. */
+  .ad-banner:not(.ad-banner-wide){min-height:64px}
+  .ad-banner-img img{max-height:100%}
+  .ad-banner-cover{position:absolute;inset:0}
+  /* contain: la imagen entra entera, sin deformarse ni recortarse. */
+  .ad-banner-cover img{width:100%;height:100%;object-fit:contain;object-position:center}
+  /* El texto va sobre la imagen, con degradado para leerse. */
+  .ad-banner-wide .ad-banner-body{
+    position:absolute;left:0;right:0;bottom:0;max-width:100%;height:auto;
+    padding:5px 10px 6px;justify-content:flex-end;
+    background:linear-gradient(0deg,rgba(18,21,13,.9) 0%,rgba(18,21,13,.62) 68%,rgba(18,21,13,0) 100%);
+  }
+  .ad-banner-wide .ad-banner-title{font-size:12.5px;text-shadow:0 1px 3px rgba(0,0,0,.9)}
   .ad-banner-img{flex:0 0 84px}
   .ad-banner-desc{display:none}
   .ad-banner-body{padding:7px 10px}
-  .ad-banner-wide .ad-banner-body{max-width:80%}
   /* Los dos botones de Inicio y Salir en fila, centrados y sin apretar. */
   .sidebar-quick{flex-direction:column;gap:2px}
   .quick-item{justify-content:flex-start;font-size:14px}
@@ -793,6 +823,9 @@ textarea{resize:vertical}
 @media (max-width:360px){
   .content{padding:10px}
   .card{padding:12px}
+  /* El banner mantiene su proporción (lo pone el bloque de 430 px), sin
+     min-height: si se fuerza un alto mayor que el que le toca, la imagen queda
+     centrada y aparecen bandas negras arriba y abajo. */
   .ad-banner-img{flex:0 0 68px}
   .ad-banner-body{padding:6px 8px;gap:2px}
   .ad-banner-title{font-size:13px}
