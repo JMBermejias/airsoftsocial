@@ -29,7 +29,7 @@ $schemaIssues = ensure_schema();
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Airsoft Social: red social para la comunidad airsoft. Noticias, historias, amigos, campos de juego y tienda online.">
 <meta name="theme-color" content="#3a4b3b">
 <meta name="mobile-web-app-capable" content="yes">
@@ -40,7 +40,7 @@ $schemaIssues = ensure_schema();
 <link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
 <title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>
-<link rel="stylesheet" href="assets/css/style.css?v=17">
+<link rel="stylesheet" href="assets/css/style.css?v=18">
 </head>
 <body>
 <div class="layout">

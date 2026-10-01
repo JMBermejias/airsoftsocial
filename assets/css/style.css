@@ -32,6 +32,10 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+/* En móvil nada debe empujar la página de lado: si un elemento se sale, que
+   se recorte él y no la pantalla (si no aparece una barra horizontal y la
+   página se "descoloca" al girar el móvil). */
+html{overflow-x:hidden}
 body{
   font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
   background:
@@ -40,6 +44,11 @@ body{
   color:var(--text);
   font-size:15px;
   line-height:1.5;
+  overflow-x:hidden;
+  /* Las barras del sistema (muesca de la cámara, gesto de volver) se comen
+     parte de la pantalla: sin esto el menú y los botones quedan debajo. */
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
 }
 a{color:var(--lime);text-decoration:none}
 a:hover{color:#fff}
@@ -50,7 +59,7 @@ h1,h2,h3,h4{margin:.2em 0;line-height:1.2}
 .empty{color:var(--muted);text-align:center;padding:18px}
 
 /* ---------- LAYOUT PRINCIPAL ---------- */
-.layout{display:flex;min-height:100vh}
+.layout{display:flex;min-height:100vh;min-height:100dvh}
 .content{
   flex:1;
   min-width:0;
@@ -58,6 +67,9 @@ h1,h2,h3,h4{margin:.2em 0;line-height:1.2}
   max-width:calc(var(--work-w) + 40px);
   margin:0 auto;
   padding:20px;
+  /* Margen inferior extra para el gesto de volver de Android: sin esto el
+     último contenido (publicar, comentar) queda bajo la barra de gestos. */
+  padding-bottom:calc(20px + env(safe-area-inset-bottom));
 }
 .sidebar{
   flex:0 0 auto;
@@ -128,6 +140,9 @@ h1,h2,h3,h4{margin:.2em 0;line-height:1.2}
 .btn-micro:hover{color:#fff;border-color:var(--accent)}
 
 .sidebar-foot{margin-top:auto;padding:12px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+/* El gesto de "volver" de Android ocupa la franja de abajo: sin este margen el
+   último botón queda justo debajo y no se ve ni se puede pulsar bien. */
+.sidebar-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 .sidebar-foot a{color:var(--muted)}
 .sidebar-foot a:hover{color:#fff}
 
@@ -426,14 +441,8 @@ textarea{resize:vertical}
 }
 .ad-banner-admin:hover{color:#fff;background:rgba(255,255,255,.06)}
 
-/* En pantallas estrechas el banner no puede medir 728 px: se recorta la parte
- * menos importante (descripción y llamada) y se mantiene la franja de 90 px. */
-@media (max-width:620px){
-  .ad-banner-img{flex:0 0 84px}
-  .ad-banner-desc{display:none}
-  .ad-banner-body{padding:7px 10px}
-  .ad-banner-wide .ad-banner-body{max-width:80%}
-}
+/* El ajuste del banner en pantallas estrechas vive en el bloque "MÓVIL" del
+ * final del fichero, junto con el resto de cortes por anchura. */
 
 /* ---------- ESTADÍSTICAS ADMIN ---------- */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
@@ -558,4 +567,95 @@ textarea{resize:vertical}
 
 @media (max-width:720px){
   .product-detail-grid{grid-template-columns:1fr}
+}
+
+/* ================= MÓVIL: AJUSTE A LA PANTALLA =================
+ *
+ * Hasta aquí los cortes de anchura eran para el escritorio (1080, 880, 620,
+ * 520) y dejaban huecos: en un móvil de 360-430 px seguían mandando las
+ * tablas de escritorio, los menús con su ancho fijo y los campos con su
+ * min-width. Esto es lo que faltaba.
+ *
+ * Las medidas de referencia son las de los móviles actuales: 430 px (iPhone
+ * Pro Max), 360 px (Android normal) y 320 px (los más pequeños que aún se
+ * usan). Se empieza por 880, que es donde ya se apila el layout, y se va
+ * cerrando. */
+
+/* --- Hasta 880 px: una sola columna en todas partes --- */
+@media (max-width:880px){
+  /* El login a dos columnas solo cabe en pantallas grandes; en móvil se apila. */
+  .auth-wrap{grid-template-columns:1fr;gap:18px;width:min(560px,100%);text-align:center}
+  .auth-wrap .hero-logo{font-size:44px}
+  /* Los campos con min-width fijo obligaban a desplazar la pantalla. */
+  .search-form,.tags-input,.pay-toggle{min-width:0}
+  .pay-toggle{width:100%}
+  /* Los campos de formulario ocupan el ancho disponible en vez de la mitad. */
+  .form-row{grid-template-columns:1fr}
+  /* Botones a ancho completo: se aprietan mucho con el dedo si van en fila. */
+  .btn{padding:10px 14px}
+}
+
+/* --- Hasta 620 px: una columna y sin anchos mínimos --- */
+@media (max-width:620px){
+  .two-col{grid-template-columns:1fr;gap:14px}
+  .stats-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .pay-methods{grid-template-columns:1fr}
+  /* El visor de historias no tiene 220 px de ancho dentro del móvil. */
+  #story-progress{width:min(220px,calc(100% - 48px));left:24px;right:24px}
+  .story-close{right:14px;top:14px;font-size:22px}
+  /* Las historias y el compositor no fuerzan ancho mínimo. */
+  .story-preview{min-width:0}
+  .composer-tools,.toolbar{flex-direction:column;align-items:stretch}
+  .profile-details{grid-template-columns:1fr}
+  /* Menú: se deja el ancho completo y sin desplazar. */
+  .main-nav{flex-wrap:wrap;overflow-x:visible}
+  .nav-item{padding:10px 12px}
+}
+
+/* --- Hasta 430 px (móviles grandes) --- */
+@media (max-width:430px){
+  /* En pantallas estrechas el banner no puede medir 728 px: se recorta la parte
+     menos importante (la descripción) y se mantiene la franja de 90 px. */
+  .ad-banner-img{flex:0 0 84px}
+  .ad-banner-desc{display:none}
+  .ad-banner-body{padding:7px 10px}
+  .ad-banner-wide .ad-banner-body{max-width:80%}
+  /* Los dos botones de Inicio y Salir en fila, centrados y sin apretar. */
+  .sidebar-quick{flex-direction:column;gap:2px}
+  .quick-item{justify-content:flex-start;font-size:14px}
+  /* La tienda se lee mejor en una columna. */
+  .product-detail-grid{grid-template-columns:1fr}
+  .product-detail-img{max-height:220px}
+  .stats-grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+}
+
+/* --- Hasta 360 px (Android típicos) --- */
+@media (max-width:360px){
+  .content{padding:10px}
+  .card{padding:12px}
+  .ad-banner-img{flex:0 0 68px}
+  .ad-banner-body{padding:6px 8px;gap:2px}
+  .ad-banner-title{font-size:13px}
+  .quick-item{font-size:13px;padding:9px 10px}
+  .btn{padding:10px 12px}
+}
+
+/* --- Hasta 320 px (los más pequeños que aún se usan) --- */
+@media (max-width:320px){
+  body{font-size:14px}
+  .content{padding:8px}
+  .card{padding:10px}
+  .ad-banner-img{flex:0 0 56px}
+  .ad-banner-title{font-size:12.5px}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .quick-item{padding:8px;font-size:12.5px}
+  /* En un móvil tan estrecho, el texto largo se corta; nada de desbordes. */
+  .card,.content{min-width:0;max-width:100%}
+  img,video{max-width:100%;height:auto}
+}
+
+/* --- Al girar el móvil: el alto pasa a ser el ancho, y todo se recoloca --- */
+@media (orientation:landscape) and (max-height:500px){
+  .left-sidebar{position:static;height:auto}
+  .content{padding:12px}
 }
