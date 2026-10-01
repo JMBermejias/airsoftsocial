@@ -153,7 +153,12 @@ h1,h2,h3,h4{margin:.2em 0;line-height:1.2}
 .store-head small{color:var(--muted);font-size:11px}
 .store-list{display:flex;flex-direction:column;gap:12px}
 .product-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-.product-img{width:100%;height:130px;object-fit:cover;background:#111}
+/* La miniatura va a sangre dentro de la tarjeta. El <img> es en línea y va
+ * dentro de un <a> que también lo es, así que el navegador lo sentaba sobre la
+ * línea de texto: la foto salía desplazada y con una franja oscura debajo.
+ * Con display:block en el enlace y en la imagen se pega a los bordes. */
+.product-card>a{display:block;line-height:0}
+.product-img{display:block;width:100%;height:130px;object-fit:cover;background:#111}
 .product-img.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);font-weight:700;background:linear-gradient(160deg,var(--olive),#1b1f15);font-size:13px}
 .product-img.placeholder span{font-size:32px}
 .product-body{padding:10px}
@@ -221,7 +226,8 @@ textarea{resize:vertical}
 .file-picker:hover{border-color:var(--accent);color:#fff}
 .file-picker input{display:none}
 .field-label{display:block;margin:14px 0 4px;font-size:13px;color:var(--text);font-weight:600}
-.thumb{width:74px;height:74px;object-fit:cover;border-radius:8px;border:1px solid var(--line);margin-top:8px}
+/* display:block: en línea el navegador deja el hueco de la línea de texto debajo. */
+.thumb{display:block;width:74px;height:74px;object-fit:cover;border-radius:8px;border:1px solid var(--line);margin-top:8px}
 .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}
 .search-form{display:flex;gap:8px;flex:1;min-width:220px}
 .search-input{flex:1}
@@ -241,7 +247,7 @@ textarea{resize:vertical}
   background:linear-gradient(135deg,var(--accent),var(--lime));
   padding:3px;overflow:hidden;
 }
-.story-ring img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid var(--bg)}
+.story-ring img{display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid var(--bg)}
 .story-ring.add{background:rgba(255,255,255,.1);font-size:26px;color:var(--accent)}
 .story-btn.own span:first-child{color:var(--accent)}
 .story-btn.lg{display:flex;align-items:center;gap:12px;flex:0 0 auto}
@@ -250,7 +256,7 @@ textarea{resize:vertical}
 .story-name{font-size:13px}
 .story-name strong{color:#fff}
 .story-preview{flex:1;min-width:180px;display:flex;gap:10px;align-items:center;color:var(--muted);font-size:13px}
-.story-preview img{width:80px;height:60px;object-fit:cover;border-radius:6px}
+.story-preview img{display:block;width:80px;height:60px;object-fit:cover;border-radius:6px}
 .story-preview p{margin:0}
 .stories-grid{display:grid;gap:12px}
 .story-btn.own{border:1px dashed var(--line);border-radius:12px;padding:8px 14px;color:var(--muted)}
@@ -277,7 +283,7 @@ textarea{resize:vertical}
 .story-top .avatar{width:40px;height:40px}
 #sv-user{font-weight:700;color:#fff}
 .story-text{font-size:16px;color:var(--text);margin:12px 0;text-align:justify;hyphens:auto}
-.story-img{max-height:52vh;border-radius:10px;border:1px solid var(--line)}
+.story-img{display:block;max-height:52vh;border-radius:10px;border:1px solid var(--line)}
 .story-close{
   position:absolute;top:26px;right:34px;background:none;border:none;color:#fff;
   font-size:26px;cursor:pointer;z-index:110;
@@ -315,7 +321,10 @@ textarea{resize:vertical}
  * PHP ya mete los saltos con nl2br(): con las dos cosas a la vez, cada salto
  * del texto salía duplicado (una vez el <br> y otra el \n). */
 .post-body{margin:10px 0 8px;font-size:15px;overflow-wrap:break-word;text-align:justify;hyphens:auto}
-.post-file img{max-height:420px;border-radius:10px;border:1px solid var(--line);width:100%;object-fit:cover}
+/* El enlace que envuelve la imagen también es en línea: sin display:block
+ * deja el hueco de la línea de texto y la foto sale desplazada. */
+.post-file a{display:block;line-height:0}
+.post-file img{display:block;max-height:420px;border-radius:10px;border:1px solid var(--line);width:100%;object-fit:cover}
 .pdf-link{display:inline-block;background:rgba(201,79,61,.15);color:#e08577;padding:10px 16px;border-radius:8px;font-weight:700}
 .post-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .tag{background:var(--olive-2);color:var(--lime);border-radius:12px;padding:2px 10px;font-size:12px;font-weight:600}
@@ -336,6 +345,7 @@ textarea{resize:vertical}
 
 /* ---------- AVATARES / USUARIOS ---------- */
 .avatar{
+  display:block;
   width:var(--s,40px);height:var(--s,40px);border-radius:50%;
   object-fit:cover;background:var(--olive-2);border:2px solid var(--line);
   flex-shrink:0;
@@ -385,7 +395,7 @@ textarea{resize:vertical}
 .field-body h3{margin:0}
 .field-tags{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
 .field-desc{color:var(--muted);font-size:13px;margin:4px 0 8px}
-.field-hero{width:100%;max-height:320px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--line);margin-bottom:14px}
+.field-hero{display:block;width:100%;max-height:320px;object-fit:cover;border-radius:var(--radius);border:1px solid var(--line);margin-bottom:14px}
 .field-detail-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
 .field-details-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
 .info-item{background:var(--bg-soft);border-radius:8px;padding:10px}
@@ -400,6 +410,7 @@ textarea{resize:vertical}
 /* ---------- TIENDA ---------- */
 .grid-products{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .product-full{display:flex;flex-direction:column}
+.product-full>a{display:block;line-height:0}
 .product-img.big{height:180px}
 .product-full .product-body{display:flex;flex-direction:column;flex:1;gap:8px}
 .product-full h3{margin:0;font-size:16px;color:#fff}
@@ -548,13 +559,13 @@ textarea{resize:vertical}
 
 /* ---------- HISTORIA CON VÍDEO ---------- */
 .story-video{max-width:100%;max-height:52vh;border-radius:10px;border:1px solid var(--line);display:none;margin-top:10px}
-.story-video-thumb{width:96px;height:60px;object-fit:cover;border-radius:6px;background:#000}
+.story-video-thumb{display:block;width:96px;height:60px;object-fit:cover;border-radius:6px;background:#000}
 
 /* ---------- FICHA DE PRODUCTO / MÉTODOS DE PAGO ---------- */
 .breadcrumb{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px;margin-bottom:14px}
 .product-detail{border-color:var(--line)}
 .product-detail-grid{display:grid;grid-template-columns:minmax(220px,42%) 1fr;gap:20px}
-.product-detail-img{width:100%;border-radius:var(--radius);border:1px solid var(--line);object-fit:cover;max-height:340px}
+.product-detail-img{display:block;width:100%;border-radius:var(--radius);border:1px solid var(--line);object-fit:cover;max-height:340px}
 .product-detail-img.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:260px;color:var(--muted);font-weight:800;font-size:16px;background:linear-gradient(160deg,var(--olive),#1b1f15)}
 .product-detail-img.placeholder span{font-size:52px}
 .product-detail-info h2{margin:0 0 6px;color:#fff;font-size:22px}
