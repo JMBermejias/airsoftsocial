@@ -171,10 +171,15 @@ h1,h2,h3,h4{margin:.2em 0;line-height:1.2}
 
 /* ---------- BOTONES ---------- */
 .btn{
-  display:inline-block;border:none;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:none;cursor:pointer;
   background:var(--panel-2);color:var(--text);
-  padding:8px 14px;border-radius:8px;font-size:14px;font-weight:600;
+  padding:9px 16px;border-radius:8px;font-size:14px;font-weight:600;
   text-align:center;transition:.15s;
+  /* Con el dedo gordo los botones de 14 px se pulsan mal y salen desiguales.
+     44 px es el mínimo recomendado en móvil. */
+  min-height:38px;
+  -webkit-tap-highlight-color:transparent;
 }
 .btn:hover{filter:brightness(1.12);color:#fff}
 .btn-primary{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#241a08}
@@ -545,11 +550,36 @@ textarea{resize:vertical}
  * publicación, y las notificaciones y el botón de instalar ni siquiera
  * aparecían (estaban en display:none).
  *
- * Ahora el panel se convierte en una barra superior compacta y fija: marca,
- * avatar y un botón de menú. El menú se abre encima, a pantalla completa.
- * El contenido empieza justo debajo y ya no hay que desplazarse para nada. */
+ * Ahora el panel es una barra superior compacta y fija: marca, avatar y un
+ * botón de menú. El menú se abre encima.
+ *
+ * IMPORTANTE — el menú NO depende de JavaScript. Por defecto (sin JS) el menú
+ * está desplegado y se ve todo, como antes. Solo cuando app.js confirma que
+ * puedeManagearlo añade la clase .js-menu al <html>, y es entonces cuando se
+ * pliega. Si el JS no carga o falla, la web sigue siendo usable: se ve el menú
+ * abierto, que es exactamente como estaba antes. Antes de este cambio, ocultar
+ * el menú por CSS sin JS dejaba la aplicación sin navegación. */
 @media (max-width:880px){
   .layout{flex-direction:column}
+
+  /* Menú desplegado por defecto: es lo que se ve si no hay JS. */
+  .main-nav{flex-direction:column;flex-wrap:nowrap;border-top:1px solid var(--line);padding:6px}
+  .nav-item{padding:12px 14px;font-size:15px;border-radius:10px}
+  .nav-item.active{background:rgba(255,255,255,.07)}
+  .notif-box{margin:6px 6px 0;padding:12px;border-top:1px solid var(--line)}
+  .sidebar-quick{flex-direction:column;gap:2px;border-bottom:1px solid var(--line);padding:6px}
+  .quick-item{justify-content:flex-start;font-size:15px;padding:12px 14px;border-radius:10px}
+  .sidebar-foot{padding:10px 6px 6px}
+
+  /* Y con JS disponible, se pliega hasta que se pulse el botón. */
+  .js-menu .main-nav,
+  .js-menu .sidebar-quick,
+  .js-menu .notif-box,
+  .js-menu .sidebar-foot{display:none}
+  .js-menu .left-sidebar.open .main-nav{display:flex;max-height:70vh;overflow-y:auto}
+  .js-menu .left-sidebar.open .sidebar-quick{display:flex}
+  .js-menu .left-sidebar.open .notif-box{display:flex;max-height:34vh;overflow-y:auto}
+  .js-menu .left-sidebar.open .sidebar-foot{display:block}
 
   /* --- La barra superior --- */
   .sidebar{
@@ -591,37 +621,6 @@ textarea{resize:vertical}
   /* El aviso de instalar va bajo la marca, dentro de la barra fija. */
   .left-sidebar .install-hint{display:block;padding:0 12px 8px}
   .left-sidebar .install-hint[hidden]{display:none}
-
-  /* --- El menú desplegado --- */
-  .main-nav,.sidebar-quick,.notif-box,.sidebar-foot{
-    display:none;
-  }
-  .left-sidebar.open .main-nav,
-  .left-sidebar.open .sidebar-quick,
-  .left-sidebar.open .notif-box,
-  .left-sidebar.open .sidebar-foot{display:flex}
-  .left-sidebar.open .main-nav{
-    flex-direction:column;flex-wrap:nowrap;
-    border-top:1px solid var(--line);padding:6px;
-    max-height:70vh;overflow-y:auto;
-  }
-  .left-sidebar.open .nav-item{
-    padding:12px 14px;font-size:15px;border-radius:10px;
-  }
-  .left-sidebar.open .nav-item.active{background:rgba(255,255,255,.07)}
-  /* Las notificaciones y el botón de instalar vuelven a verse: antes estaban
-     ocultos en móvil, y sin el botón no se podía instalar la app. */
-  .left-sidebar.open .notif-box{
-    margin:6px 6px 0;padding:12px;border-top:1px solid var(--line);
-    max-height:34vh;overflow-y:auto;
-  }
-  .left-sidebar.open .sidebar-foot{margin-top:auto;padding:10px 6px 6px}
-  .left-sidebar.open .sidebar-quick{
-    flex-direction:column;gap:2px;border-bottom:1px solid var(--line);padding:6px;
-  }
-  .left-sidebar.open .quick-item{
-    justify-content:flex-start;font-size:15px;padding:12px 14px;border-radius:10px;
-  }
 
   /* El fondo oscurecido al abrir el menú. */
   .menu-backdrop{
@@ -752,9 +751,13 @@ textarea{resize:vertical}
   .story-preview{min-width:0}
   .composer-tools,.toolbar{flex-direction:column;align-items:stretch}
   .profile-details{grid-template-columns:1fr}
-  /* Menú: se deja el ancho completo y sin desplazar. */
-  .main-nav{flex-wrap:wrap;overflow-x:visible}
-  .nav-item{padding:10px 12px}
+  /* Botones: a ancho completo y con alto suficiente para el dedo. En fila se
+     aprietan y se pulsan mal, y de tamaño desigual se ve descuadrado. */
+  .btn{min-height:44px;padding:12px 16px}
+  .btn-small{min-height:38px;padding:9px 14px;font-size:13px}
+  .form-actions,.row-actions,.card-actions{flex-wrap:wrap}
+  .form-actions .btn{flex:1 1 100%}
+  .toolbar .btn{flex:1 1 auto}
 }
 
 /* --- Hasta 430 px (móviles grandes) --- */

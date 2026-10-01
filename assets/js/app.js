@@ -15,13 +15,17 @@ if (navigator.serviceWorker) {
 
 /* ---- Menú del móvil ----
  * En móvil el panel lateral es una barra superior con un botón que abre el menú
- * desplegado (notificaciones, instalar la app, salir…). En escritorio el botón
- * no se ve, así que todo esto no hace nada y el menú está siempre abierto. */
+ * desplegado (notificaciones, instalar la app, salir…).
+ *
+ * El CSS deja el menú DESPLEGADO por defecto, para que la web siga siendo
+ * usable aunque este fichero no cargue. Aquí solo se marca <html class="js-menu">
+ * cuando está todo en su sitio, y es esa clase la que hace que el CSS lo pliegue.
+ * Si algo falla, el menú se queda abierto y no se pierde la navegación. */
 (function () {
   var sidebar  = document.getElementById('app-sidebar');
   var toggle   = document.getElementById('menu-toggle');
   var backdrop = document.getElementById('menu-backdrop');
-  if (!sidebar || !toggle) return;
+  if (!sidebar || !toggle) return;          /* index.php: no hay panel */
 
   function setOpen(open) {
     sidebar.classList.toggle('open', open);
@@ -44,7 +48,7 @@ if (navigator.serviceWorker) {
   });
   /* Al pulsar un enlace del menú se cierra (por si hay navegación interna). */
   sidebar.addEventListener('click', function (e) {
-    if (e.target.closest('a') && sidebar.classList.contains('open')) {
+    if (e.target.closest && e.target.closest('a') && sidebar.classList.contains('open')) {
       setOpen(false);
     }
   });
@@ -53,6 +57,9 @@ if (navigator.serviceWorker) {
   window.addEventListener('resize', function () {
     if (window.innerWidth > 880) setOpen(false);
   });
+
+  /* Todo listo: a partir de ahora el CSS puede plegar el menú con seguridad. */
+  document.documentElement.classList.add('js-menu');
 })();
 
 /* ---- Visor de historias ---- */
