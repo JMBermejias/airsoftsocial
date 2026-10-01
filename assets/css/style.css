@@ -355,7 +355,9 @@ textarea{resize:vertical}
 
 /* ---------- PERFIL ---------- */
 .profile-card{position:relative;overflow:visible}
-.profile-banner{height:120px;border-radius:var(--radius);background:repeating-linear-gradient(45deg,rgba(232,147,47,.18) 0 10px,rgba(232,147,47,.06) 10px 20px),var(--olive);margin:-16px -16px 0}
+/* display:block por el mismo motivo que .field-img: sin él, el hueco de la
+ * línea de texto descentra la franja. */
+.profile-banner{display:block;width:100%;height:120px;border-radius:var(--radius);background:repeating-linear-gradient(45deg,rgba(232,147,47,.18) 0 10px,rgba(232,147,47,.06) 10px 20px),var(--olive);margin:-16px -16px 0}
 .profile-pic{margin-top:-56px;padding:6px 16px 0;position:relative;z-index:2}
 .profile-pic .avatar{border:4px solid var(--panel)}
 .profile-info h2{margin:8px 0 2px;font-size:22px;color:#fff}
@@ -371,7 +373,14 @@ textarea{resize:vertical}
 /* ---------- CAMPOS ---------- */
 .grid-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .field-card{overflow:hidden;display:flex;flex-direction:column}
-.field-img{height:150px;object-fit:cover;margin:-16px -16px 0}
+/* La foto del campo va a sangre hasta el borde de la tarjeta. Se pone
+ * display:block porque un <img> inline deja el hueco de la línea de texto y
+ * la imagen se ve desplazada hacia la izquierda; los márgenes negativos
+ * quitan el padding de la tarjeta por arriba y a los lados. */
+.field-img{
+  display:block;width:100%;height:150px;object-fit:cover;
+  margin:-16px -16px 0;flex:0 0 auto;
+}
 .field-body{padding-top:12px;display:flex;flex-direction:column;gap:4px;flex:1}
 .field-body h3{margin:0}
 .field-tags{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
