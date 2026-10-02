@@ -110,26 +110,64 @@ $omit = ['config.php', 'uploads', '.git'];
  * sistema de ficheros es atómico. Así, si la petición se corta a mitad
  * (tiempo agotado del hosting, 502...), nunca queda un PHP truncado que
  * deje la web entera en blanco: sigue el fichero viejo o el nuevo, entero. */
-$copyTree = function (string $src, string $dst) use ($omit, &$copyTree): void {
+/* Copia atómica y CON REGISTRO DE FALLOS.
+ *
+ * Antes los fallos se ignoraban en silencio (@copy y @unlink sin más): si un
+ * fichero no se podía escribir por permisos o porque estaba bloqueado, la web
+ * se quedaba con la versión vieja, pero la app escribía version.txt igual y
+ * decía "actualizado". Por eso podía decir que todo iba bien y no cambiar nada.
+ *
+ * Ahora cada fallo se anota con su motivo y se avisa al final, sin impedir la
+ * actualización (si un solo icono falla, el resto sí debe instalarse). */
+$fallos = [];
+$copiados = 0;
+$copyTree = function (string $src, string $dst) use ($omit, &$copyTree, &$fallos, &$copiados): void {
     foreach ((array)@scandir($src) as $it) {
         if ($it === '.' || $it === '..' || in_array($it, $omit, true)) continue;
         if ($it[0] === '.' && $it !== '.htaccess') continue;
         $s = $src . '/' . $it;
         $d = $dst . '/' . $it;
         if (is_dir($s)) {
-            if (!is_dir($d)) @mkdir($d, 0775, true);
+            if (!is_dir($d) && !@mkdir($d, 0775, true) && !is_dir($d)) {
+                $fallos[] = 'no se pudo crear el directorio ' . $it;
+                continue;
+            }
             $copyTree($s, $d);
         } else {
             $tmp = $d . '.new';
             if (@copy($s, $tmp) && @rename($tmp, $d)) {
                 @chmod($d, 0644);
+                $copiados++;
             } else {
+                /* Motivo real del fallo: casi siempre permisos del fichero o de
+                   la carpeta, que es lo que hay que arreglar en el hosting. */
+                $motivo = '';
+                if (!@copy($s, $tmp)) {
+                    $motivo = error_get_last();
+                    $motivo = $motivo ? ($motivo['message'] ?? '') : '';
+                    if (!@is_writable(dirname($d))) $motivo .= ' (la carpeta no tiene permiso de escritura)';
+                } elseif (!@rename($tmp, $d)) {
+                    $motivo = 'no se pudo renombrar (¿otro proceso lo tiene abierto?)';
+                }
                 @unlink($tmp);
+                $fallos[] = $it . ($motivo ? ': ' . $motivo : '');
             }
         }
     }
 };
 $copyTree($pkg, $root);
+
+/* Verificación: comparar lo instalado con lo que trae el paquete. Si algún
+ * fichero importante se ha quedado atrás, hay que decirlo, porque si no la app
+ * cree que se ha actualizado y sigue sirviendo la versión vieja. */
+$faltantes = [];
+foreach (['version.txt', 'favicon.ico', 'manifest.webmanifest', 'assets/css/style.css'] as $clave) {
+    $enPkg = $pkg . '/' . $clave;
+    $enWeb = $root . '/' . $clave;
+    if (is_file($enPkg) && (!is_file($enWeb) || filesize($enWeb) !== filesize($enPkg))) {
+        $faltantes[] = $clave;
+    }
+}
 
 /* 5) Forzar que los clientes (PWA) recarguen los estáticos sin caché vieja */
 $sw = $root . '/service-worker.js';
@@ -159,6 +197,22 @@ try {
 @unlink($tgz);
 update_state_write(['notified_' . $target => true]);
 
-$_SESSION['flash'] = ['ok', 'Actualización a v' . $target . ' aplicada correctamente.'
-    . ($dl_warning !== '' ? ' Aviso: ' . $dl_warning : '')];
+/* El mensaje dice lo que realmente ha pasado. Antes ponía siempre "aplicada
+ * correctamente" aunque ningún fichero se hubiera podido escribir, que es lo
+ * que hacía que los cambios pareciesen no llegar nunca. */
+$msg = 'Actualización a v' . $target . ': ' . $copiados . ' ficheros copiados.';
+if ($faltantes) {
+    $msg .= ' AVISO: estos ficheros NO se han podido actualizar, así que la web sigue '
+          . 'sirviendo la versión anterior: ' . implode(', ', $faltantes)
+          . '. Revisa los permisos de escritura de la carpeta en el hosting.';
+}
+if ($fallos) {
+    $detalle = count($fallos) > 8 ? array_slice($fallos, 0, 8) : $fallos;
+    $msg .= ' Además fallaron ' . count($fallos) . ' ficheros: ' . implode(' | ', $detalle)
+          . (count($fallos) > 8 ? ' …' : '');
+}
+if ($dl_warning !== '') {
+    $msg .= ' Aviso: ' . $dl_warning;
+}
+$_SESSION['flash'] = [($faltantes || $fallos) ? 'error' : 'ok', $msg];
 redirect('updates.php');

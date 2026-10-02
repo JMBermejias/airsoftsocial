@@ -26,6 +26,10 @@ require_once __DIR__ . '/includes/header.php';
       <p class="big-version"><strong>v<?= e($current) ?></strong></p>
       <p class="muted">Comprobación automática cada <?= update_check_hours() ?> h contra
         <a href="https://github.com/<?= e(update_github_repo()) ?>/releases" target="_blank" rel="noopener">GitHub</a>.</p>
+      <p class="muted" style="margin:6px 0 0">
+        ¿La versión es la que esperabas?
+        <a href="que_version.php" target="_blank" rel="noopener">Ver qué hay instalado en el servidor</a>
+      </p>
     </div>
     <div>
       <a class="btn btn-ghost btn-small" href="updates.php?force=1">🔄 Comprobar ahora</a>
