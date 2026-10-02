@@ -44,12 +44,12 @@ $schemaIssues = ensure_schema();
      navegador coge otra cosa, o el .ico no existe o está mal hecho, sale el
      icono genérico del sistema. -->
 <link rel="icon" href="favicon.ico?v=<?= e(str_replace('.', '', app_version())) ?>" sizes="any">
-<link rel="icon" type="image/png" sizes="192x192" href="icon.php/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon.php/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon.php?src=icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon.php?src=icon-512.png">
 <!-- iOS y los accesos directos grandes toman esta -->
-<link rel="apple-touch-icon" sizes="180x180" href="icon.php/icon-180.png">
-<link rel="apple-touch-icon" sizes="192x192" href="icon.php/icon-192.png">
-<link rel="apple-touch-icon" sizes="512x512" href="icon.php/icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon.php?src=icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon.php?src=icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon.php?src=icon-512.png">
 <!-- Algunos launchers de Android buscan el icono aquí antes que en el manifest -->
 <link rel="shortcut icon" href="favicon.ico?v=<?= e(str_replace('.', '', app_version())) ?>">
 <title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>

@@ -93,10 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!-- Iconos. El .ico va primero porque, al crear un acceso directo, Chrome y
      Android no usan el manifest: usan el favicon. -->
 <link rel="icon" href="favicon.ico?v=<?= e(str_replace('.', '', app_version())) ?>" sizes="any">
-<link rel="icon" type="image/png" sizes="192x192" href="icon.php/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon.php/icon-512.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icon.php/icon-180.png">
-<link rel="apple-touch-icon" sizes="192x192" href="icon.php/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon.php?src=icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon.php?src=icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon.php?src=icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon.php?src=icon-192.png">
 <link rel="shortcut icon" href="favicon.ico?v=<?= e(str_replace('.', '', app_version())) ?>">
 <title><?= e(APP_NAME) ?> · Iniciar sesión</title>
 <link rel="stylesheet" href="assets/css/style.css?v=31">

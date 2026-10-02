@@ -62,6 +62,22 @@ if (is_file($favP)) {
     $favBytes = (int)filesize($favP);
 }
 
+/* Lo que de verdad importa para el acceso directo: que las URLs que declara el
+ * manifest se puedan descargar. Aquí se comprueba icon.php por dentro,
+ * pero desde fuera la petición es lo que ve el navegador: si el hosting no
+ * acepta la forma de URL que usa el manifest, aquí se ve. */
+$urlsIcono = [
+    'icon.php?src=icon-192.png',
+    'icon.php?src=icon-512.png',
+    'icon.php?src=icon-maskable.png',
+    'favicon.ico',
+];
+$pruebaIconos = [];
+foreach ($urlsIcono as $u) {
+    $p = $root . '/' . $u;
+    $pruebaIconos[] = [$u, is_file($p) ? number_format((int)filesize($p)) . ' B' : 'NO EXISTE'];
+}
+
 /* Permisos de escritura: si el hosting no deja escribir, la actualización no
    puede funcionar y no hay forma de arreglarlo desde la web. */
 $perm = is_writable($root)
@@ -122,6 +138,27 @@ $e = static fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
 
 <div class="box">
   <strong class="<?= is_writable($root) ? 'ok' : 'ko' ?>"><?= $e($perm) ?></strong>
+</div>
+
+<div class="box">
+  <strong>Direcciones de los iconos</strong>
+  <p class="muted" style="margin:4px 0 10px">
+    Son las URLs que declara el manifest y las páginas. Si alguna no existe, el
+    navegador no puede descargar el icono y el acceso directo sale con el icono
+    genérico del sistema (aunque el favicon de la barra sí se vea, ese va por otra
+    ruta).
+  </p>
+  <table>
+    <thead><tr><th>URL que pide el navegador</th><th>En el servidor</th></tr></thead>
+    <tbody>
+    <?php foreach ($pruebaIconos as [$u, $estado]): ?>
+      <tr>
+        <td><code><?= $e($u) ?></code></td>
+        <td class="<?= $estado === 'NO EXISTE' ? 'ko' : 'ok' ?>"><?= $e($estado) ?></td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
 </div>
 
 <div class="box">

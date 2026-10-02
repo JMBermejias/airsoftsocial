@@ -26,13 +26,18 @@ header('Expires: 0');
 
 /* --- Qué fichero se puede servir: solo los de esta carpeta ---
  *
- * Se aceptan dos formas:
- *   icon.php?src=icon-512.png   (con query)
- *   icon.php/icon-512.png       (como ruta, sin query)
+ * La forma que usa el manifest y las páginas es la query:
+ *   icon.php?src=icon-512.png
  *
- * La segunda es la que usa el manifest. Las URLs con query las cachea el
- * instalador de Android de forma distinta y a veces se queda con una copia
- * antigua; una ruta fija como /icon.php/icon-512.png se pide siempre igual.
+ * Antes se usaba icon.php/icon-512.png (PATH_INFO, sin query), y fue un error:
+ * esa forma depende de que el servidor tenga AcceptPathInfo activado, y muchos
+ * hostings compartidos no lo tienen. Entonces devolvía 404, el manifest se
+ * quedaba sin icono y al crear un acceso directo en el móvil salía el icono
+ * genérico, aunque el favicon de la barra del navegador sí se veía (ese va por
+ * /favicon.ico y no depende de nada de esto).
+ *
+ * Se acepta también la forma con "/" por si algún sitio la usa, pero la query es
+ * la que se usa en el manifest: funciona en cualquier servidor.
  */
 $src = '';
 if (isset($_GET['src'])) {

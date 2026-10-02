@@ -19,11 +19,13 @@ AddType application/javascript .js .mjs
 
 # SIN mod_rewrite a propósito.
 #
-# El manifest pide los iconos como icon.php/icon-512.png (rutas fijas, que
-# Android cachea mejor que las URLs con ?src=). Eso lo resuelve el propio
-# icon.php leyendo REQUEST_URI, sin necesidad de reglas de reescritura.
+# Los iconos se piden como icon.php?src=... (query), NO como icon.php/archivo.
+# La forma con "/" detrás (PATH_INFO) depende de que el servidor tenga
+# AcceptPathInfo activado, y muchos hostings compartidos no lo tienen: entonces
+# devuelven 404, el manifest se queda sin icono y al crear un acceso directo en
+# el móvil sale el icono genérico. La query funciona en cualquier servidor.
 #
-# Antes había un bloque <IfModule mod_rewrite.c> con RewriteEngine On aquí, y
+# Antes hubo un bloque <IfModule mod_rewrite.c> con RewriteEngine On aquí, y
 # fue la causa de un 502: en hosting compartido, activar mod_rewrite sin
 # permiso o sin las directivas habilitadas en el panel da error de
 # configuración, y Apache se queda sin arrancar (500, o 502 si hay PHP-FPM
