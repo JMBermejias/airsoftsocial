@@ -89,11 +89,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?= e(APP_NAME) ?>">
 <link rel="manifest" href="manifest.php?v=<?= e(str_replace('.', '', app_version())) ?>">
-<link rel="icon" type="image/png" sizes="192x192" href="icon.php?src=icon-192.png">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="assets/img/icons/icon-512.png">
-<link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
+
+<!-- Iconos. El .ico va primero porque, al crear un acceso directo, Chrome y
+     Android no usan el manifest: usan el favicon. -->
+<link rel="icon" href="favicon.ico?v=<?= e(str_replace('.', '', app_version())) ?>" sizes="any">
+<link rel="icon" type="image/png" sizes="192x192" href="icon.php/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon.php/icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon.php/icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon.php/icon-192.png">
+<link rel="shortcut icon" href="favicon.ico?v=<?= e(str_replace('.', '', app_version())) ?>">
 <title><?= e(APP_NAME) ?> · Iniciar sesión</title>
 <link rel="stylesheet" href="assets/css/style.css?v=31">
 </head>

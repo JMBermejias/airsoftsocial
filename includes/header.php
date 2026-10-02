@@ -37,14 +37,21 @@ $schemaIssues = ensure_schema();
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?= e(APP_NAME) ?>">
 <link rel="manifest" href="manifest.php?v=<?= e(str_replace('.', '', app_version())) ?>">
-<!-- El favicon.ico va primero a propósito: el navegador y el instalador de
-     Android lo piden antes de mirar el manifest, y si no existe sale un icono
-     genérico en vez del logo. -->
-<link rel="icon" type="image/png" sizes="192x192" href="icon.php?src=icon-192.png">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="192x192" href="assets/img/icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="assets/img/icons/icon-512.png">
-<link rel="apple-touch-icon" href="assets/img/icons/icon-180.png">
+
+<!-- Iconos. El orden importa.
+     Cuando se crea un ACCESO DIRECTO (sin instalar la app), Chrome y Android no
+     usan el manifest: usan el favicon. Por eso el .ico va el primero: si el
+     navegador coge otra cosa, o el .ico no existe o está mal hecho, sale el
+     icono genérico del sistema. -->
+<link rel="icon" href="favicon.ico?v=<?= e(str_replace('.', '', app_version())) ?>" sizes="any">
+<link rel="icon" type="image/png" sizes="192x192" href="icon.php/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon.php/icon-512.png">
+<!-- iOS y los accesos directos grandes toman esta -->
+<link rel="apple-touch-icon" sizes="180x180" href="icon.php/icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon.php/icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon.php/icon-512.png">
+<!-- Algunos launchers de Android buscan el icono aquí antes que en el manifest -->
+<link rel="shortcut icon" href="favicon.ico?v=<?= e(str_replace('.', '', app_version())) ?>">
 <title><?= !empty($page_title) ? e($page_title) . ' · ' : '' ?><?= e(APP_NAME) ?></title>
 <link rel="stylesheet" href="assets/css/style.css?v=31">
 </head>
